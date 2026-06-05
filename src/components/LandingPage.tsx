@@ -352,8 +352,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
           </p>
           <div
             onDoubleClick={handleFooterDoubleClick}
-            className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-pointer"
-            style={{ border: '1px solid red' }}
+            className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-default select-none"
+            style={{ opacity: 0 }}
           />
         </div>
       </footer>
