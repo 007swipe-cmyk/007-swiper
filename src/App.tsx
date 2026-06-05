@@ -2002,15 +2002,18 @@ const App: React.FC = () => {
             <footer className="border-t border-white/5 py-8 text-center bg-[#030303]/50 mt-12 relative z-10">
               <div className="max-w-6xl mx-auto px-6">
                 <p 
+                  className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest select-none"
+                >
+                  © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
+                </p>
+                <div
                   onDoubleClick={() => {
                     setCurrentPage('admin_dashboard');
                     setCurrentModule('admin');
                   }}
-                  className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest cursor-pointer hover:text-zinc-400 transition-colors select-none"
-                  title="Dê duplo clique para depuração operacional"
-                >
-                  © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
-                </p>
+                  className="w-[50px] h-[50px] mx-auto mt-2"
+                  style={{ opacity: 0 }}
+                />
               </div>
             </footer>
         </main>
