@@ -5,11 +5,40 @@ import { auth } from '../lib/firebase';
 
 interface LandingPageProps {
   onLogin: () => void;
+  onRouteToAdmin: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmin }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState('');
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+
+  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdminLoading(true);
+    setAdminLoginError('');
+    try {
+      await signInWithEmailAndPassword(auth, adminEmail.trim(), adminPassword);
+      setShowAdminLoginModal(false);
+      onRouteToAdmin();
+    } catch (error) {
+      console.error('Admin login error:', error);
+      setAdminLoginError('Acesso Administrador Negado');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const handleFooterDoubleClick = () => {
+    if (auth.currentUser || localStorage.getItem('swiper_authenticated') === 'true') {
+      onRouteToAdmin();
+    } else {
+      setShowAdminLoginModal(true);
+    }
+  };
   const [agentEmail, setAgentEmail] = useState('');
   const [agentPassword, setAgentPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -250,7 +279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       <footer className="border-t border-white/5 py-12 text-center bg-[#030303] relative z-10">
         <div className="max-w-6xl mx-auto px-6">
           <p 
-            onDoubleClick={() => setShowAdminModal(true)}
+            onDoubleClick={handleFooterDoubleClick}
             className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest cursor-pointer hover:text-zinc-400 transition-colors select-none"
             title="Dê duplo clique para depuração operacional"
           >
@@ -335,12 +364,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       )}
 
-      {/* EASTER EGG ADMIN MODAL */}
-      {showAdminModal && (
+      {/* EASTER EGG ADMIN LOGIN MODAL */}
+      {showAdminLoginModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
           <div className="w-full max-w-sm bg-[#080808] border-2 border-[#D4AF37]/30 rounded-2xl p-6 relative shadow-[0_0_50px_rgba(212,175,55,0.1)]">
             <button 
-              onClick={() => setShowAdminModal(false)}
+              onClick={() => setShowAdminLoginModal(false)}
               className="absolute top-4 right-4 p-1.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer"
             >
               <X size={16} />
@@ -348,36 +377,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
             <div className="text-center mb-6">
               <span className="text-[8px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">MÓDULO DE SEGURANÇA</span>
-              <h3 className="text-sm font-black tracking-widest uppercase text-white">DEPURAÇÃO DE USUÁRIOS</h3>
+              <h3 className="text-sm font-black tracking-widest uppercase text-white">AUTENTICAÇÃO TÁTICA MASTER</h3>
+              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Insira as credenciais do administrador</p>
             </div>
 
-            <div className="space-y-3 font-mono text-xs border-y border-white/5 py-4 my-4">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-500 uppercase font-black text-[9px]">SITUACAO</span>
-                <span className="text-[#D4AF37] font-black uppercase text-[9px]">SISTEMA: ATIVO</span>
+            <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">E-MAIL MASTER</label>
+                <input 
+                  type="email"
+                  placeholder="EX: ADMIN@007SWIPER.COM"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="w-full bg-[#050505] border border-[#D4AF37]/20 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37] outline-none placeholder:text-zinc-800 transition-all"
+                  required
+                />
               </div>
-              <div className="flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-zinc-400 font-bold uppercase tracking-tight flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Usuários Ativos:
-                </span>
-                <span className="text-emerald-400 font-black text-sm">247</span>
-              </div>
-              <div className="flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-zinc-400 font-bold uppercase tracking-tight flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                  Usuários Inativos:
-                </span>
-                <span className="text-red-500 font-black text-sm">34</span>
-              </div>
-            </div>
 
-            <button 
-              onClick={() => setShowAdminModal(false)}
-              className="w-full bg-zinc-900 hover:bg-[#D4AF37] hover:text-black border border-white/10 hover:border-transparent text-white font-black uppercase tracking-widest py-3 rounded-lg text-[10px] transition-all cursor-pointer"
-            >
-              FECHAR DEPURAÇÃO
-            </button>
+              <div>
+                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">SENHA DE CREDENCIAMENTO</label>
+                <input 
+                  type="password"
+                  placeholder="••••••••"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full bg-[#050505] border border-[#D4AF37]/20 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37] outline-none placeholder:text-zinc-800 transition-all"
+                  required
+                />
+              </div>
+
+              {adminLoginError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded text-[9px] font-black uppercase tracking-wider text-center">
+                  {adminLoginError}
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isAdminLoading}
+                className="w-full bg-zinc-900 hover:bg-[#D4AF37] hover:text-black border border-white/10 hover:border-transparent text-white font-black uppercase tracking-widest py-3 rounded-lg text-[10px] transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isAdminLoading ? 'CONECTANDO...' : 'DESBLOQUEAR ACESSO MASTER'}
+              </button>
+            </form>
           </div>
         </div>
       )}

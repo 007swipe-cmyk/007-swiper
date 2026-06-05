@@ -9,6 +9,7 @@ import { Sidebar } from './components/Sidebar';
 import { OfferDetails } from './components/OfferDetails';
 import { LabExpertDashboard } from './components/LabExpertDashboard';
 import { LandingPage } from './components/LandingPage';
+import { AdminDashboard } from './components/AdminDashboard';
 
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6N1u2xV-Of_muP_LJY9OGC77qXDOJ254TVzwpYAb-Ew8X-6-ZL3ZurlTiAwy19w/pub?output=csv';
@@ -741,6 +742,27 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    // Admin Dashboard Route Protection
+    if (currentPage === 'admin_dashboard' || currentModule === 'admin') {
+      if (!isAuthenticated) {
+        return (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-center border border-white/5 rounded-xl bg-[#0a0a0a]">
+            <ShieldCheck size={48} className="text-[#D4AF37] mb-6 opacity-50" />
+            <h2 className="text-xl font-black text-white uppercase tracking-widest mb-2">Acesso Restrito</h2>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold max-w-md">Você precisa estar autenticado para acessar este painel.</p>
+          </div>
+        );
+      }
+      return (
+        <AdminDashboard 
+          onBack={() => {
+            setCurrentPage('dashboard');
+            setCurrentModule('home');
+          }} 
+        />
+      );
+    }
+
     if (currentModule === 'swiper') {
 
         if (currentPage === 'cofre' || currentPage === 'favoritos') {
@@ -1918,6 +1940,12 @@ const App: React.FC = () => {
           setIsAuthenticated(true);
           localStorage.setItem('swiper_authenticated', 'true');
         }} 
+        onRouteToAdmin={() => {
+          setIsAuthenticated(true);
+          localStorage.setItem('swiper_authenticated', 'true');
+          setCurrentPage('admin_dashboard');
+          setCurrentModule('admin');
+        }}
       />
     );
   }
@@ -1966,8 +1994,25 @@ const App: React.FC = () => {
         {currentModule !== 'home' && (
           <Sidebar currentModule={currentModule} currentPage={currentPage} activeFolderId={null} folders={[]} setCurrentPage={setCurrentPage} setActiveFolderId={() => {}} createNewFolder={() => {}} activeViralTab={activeViralTab} setActiveViralTab={setActiveViralTab} />
         )}
-        <main className={`flex-1 p-8 overflow-y-auto h-[calc(100vh-65px)] ${currentModule !== 'home' ? 'ml-60' : ''}`}>
-            {renderContent()}
+        <main className={`flex-1 p-8 overflow-y-auto h-[calc(100vh-65px)] ${currentModule !== 'home' ? 'ml-60' : ''} flex flex-col justify-between`}>
+            <div className="flex-1">
+              {renderContent()}
+            </div>
+            
+            <footer className="border-t border-white/5 py-8 text-center bg-[#030303]/50 mt-12 relative z-10">
+              <div className="max-w-6xl mx-auto px-6">
+                <p 
+                  onDoubleClick={() => {
+                    setCurrentPage('admin_dashboard');
+                    setCurrentModule('admin');
+                  }}
+                  className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest cursor-pointer hover:text-zinc-400 transition-colors select-none"
+                  title="Dê duplo clique para depuração operacional"
+                >
+                  © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
+                </p>
+              </div>
+            </footer>
         </main>
       </div>
     </div>
