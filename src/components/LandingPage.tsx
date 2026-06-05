@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Play, Check, X, MessageCircle } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -43,6 +44,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
   const [agentPassword, setAgentPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authTab, setAuthTab] = useState<'login' | 'firstAccess'>('login');
   
   // Checkout URL logic depending on search parameter 'ref'
   const [isHotmart, setIsHotmart] = useState(false);
@@ -65,14 +67,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
     e.preventDefault();
     setIsLoading(true);
     setLoginError('');
-    try {
-      await signInWithEmailAndPassword(auth, agentEmail.trim(), agentPassword);
-      onLogin();
-    } catch (error) {
-      console.error('Login error:', error);
-      setLoginError('Acesso Negado');
-    } finally {
-      setIsLoading(false);
+    const emailClean = agentEmail.trim();
+
+    if (authTab === 'login') {
+      try {
+        await signInWithEmailAndPassword(auth, emailClean, agentPassword);
+        onLogin();
+      } catch (error) {
+        console.error('Login error:', error);
+        setLoginError('Acesso Negado');
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // PRIMEIRO ACESSO FLOW
+      try {
+        // 1. Query Firestore agentes collection
+        const docRef1 = doc(db, 'agentes', emailClean);
+        const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
+        const docSnap1 = await getDoc(docRef1);
+        const docSnap2 = await getDoc(docRef2);
+        
+        let existsAndActive = false;
+        let foundData = null;
+        if (docSnap1.exists()) {
+          foundData = docSnap1.data();
+        } else if (docSnap2.exists()) {
+          foundData = docSnap2.data();
+        }
+        
+        if (foundData) {
+          if (foundData.ativo === true) {
+            existsAndActive = true;
+          }
+        } else {
+          // Fallback: Query by email field
+          const agentesRef = collection(db, 'agentes');
+          const q1 = query(agentesRef, where('email', '==', emailClean));
+          const q2 = query(agentesRef, where('email', '==', emailClean.toLowerCase()));
+          const snap1 = await getDocs(q1);
+          const snap2 = await getDocs(q2);
+          
+          if (!snap1.empty) {
+            const data = snap1.docs[0].data();
+            if (data && data.ativo === true) {
+              existsAndActive = true;
+            }
+          } else if (!snap2.empty) {
+            const data = snap2.docs[0].data();
+            if (data && data.ativo === true) {
+              existsAndActive = true;
+            }
+          }
+        }
+
+        if (!existsAndActive) {
+          setLoginError('E-mail não encontrado ou inativo. Contate o suporte.');
+          setIsLoading(false);
+          return;
+        }
+
+        // 2. Create the user with email and chosen password in Firebase Auth
+        await createUserWithEmailAndPassword(auth, emailClean, agentPassword);
+        onLogin(); // Log them in automatically on success
+      } catch (error: any) {
+        console.error('First access registration error:', error);
+        if (error.code === 'auth/email-already-in-use') {
+          setLoginError('Este e-mail já possui cadastro. Use a aba "Entrar" com sua senha.');
+        } else {
+          setLoginError(error.message || 'Erro ao realizar primeiro acesso.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -321,9 +388,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Insira suas credenciais operacionais</p>
             </div>
 
+            {/* TABS SELECTOR */}
+            <div className="flex border-b border-white/5 mb-6">
+              <button
+                type="button"
+                onClick={() => { setAuthTab('login'); setLoginError(''); setAgentEmail(''); setAgentPassword(''); }}
+                className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  authTab === 'login'
+                    ? 'border-b-2 border-[#D4AF37] text-white'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                ENTRAR
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthTab('firstAccess'); setLoginError(''); setAgentEmail(''); setAgentPassword(''); }}
+                className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  authTab === 'firstAccess'
+                    ? 'border-b-2 border-[#D4AF37] text-white'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                PRIMEIRO ACESSO
+              </button>
+            </div>
+
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">E-MAIL DO AGENTE</label>
+                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">
+                  {authTab === 'login' ? 'E-MAIL DO AGENTE' : 'E-MAIL PARA ATIVAÇÃO'}
+                </label>
                 <input 
                   type="email"
                   placeholder="EX: AGENTE@007SWIPER.COM"
@@ -335,13 +430,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
               </div>
 
               <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">SENHA DE CREDENCIAMENTO</label>
+                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">
+                  {authTab === 'login' ? 'SENHA DE CREDENCIAMENTO' : 'ESCOLHA UMA SENHA SEGURA'}
+                </label>
                 <input 
                   type="password"
-                  placeholder="EX: AGENTE-XXX"
+                  placeholder="••••••••"
                   value={agentPassword}
                   onChange={(e) => setAgentPassword(e.target.value)}
-                  className="w-full bg-[#050505] border border-white/10 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37]/65 outline-none placeholder:text-zinc-800 transition-all uppercase"
+                  className="w-full bg-[#050505] border border-white/10 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37]/65 outline-none placeholder:text-zinc-800 transition-all"
                   required
                 />
               </div>
@@ -357,7 +454,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
                 disabled={isLoading}
                 className="w-full bg-[#D4AF37] hover:bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-lg text-xs transition-all duration-300 shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:shadow-2xl active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'AUTENTICANDO...' : 'DESBLOQUEAR ACESSO'}
+                {isLoading 
+                  ? (authTab === 'login' ? 'AUTENTICANDO...' : 'CADASTRANDO...') 
+                  : (authTab === 'login' ? 'DESBLOQUEAR ACESSO' : 'ATIVAR PRIMEIRO ACESSO')
+                }
               </button>
             </form>
           </div>
