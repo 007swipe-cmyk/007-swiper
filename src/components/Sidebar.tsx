@@ -19,9 +19,16 @@ interface SidebarProps {
 }
 
 const SidebarItem: React.FC<{ icon: any; label: string; active: boolean; onClick: () => void }> = ({ icon: Icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${active ? 'bg-[#1a1a1a] text-[#D4AF37] font-black border-l-2 border-[#D4AF37]' : 'text-zinc-500 hover:bg-[#121212] hover:text-zinc-300'}`}>
-    <Icon size={14} />
-    <span className="text-[10px] uppercase tracking-widest font-bold">{label}</span>
+  <button 
+    onClick={onClick} 
+    className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+      active 
+        ? 'bg-[#1a1a1a] text-[#D4AF37] font-black border-l-2 border-[#D4AF37]' 
+        : 'text-white hover:text-zinc-100 hover:bg-[#121212]'
+    }`}
+  >
+    <Icon size={16} className={active ? 'text-[#D4AF37]' : 'text-white'} />
+    <span className="text-sm uppercase tracking-widest font-bold">{label}</span>
   </button>
 );
 

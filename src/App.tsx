@@ -10,6 +10,7 @@ import { OfferDetails } from './components/OfferDetails';
 import { LabExpertDashboard } from './components/LabExpertDashboard';
 import { LandingPage } from './components/LandingPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdLibrary } from './components/AdLibrary';
 
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6N1u2xV-Of_muP_LJY9OGC77qXDOJ254TVzwpYAb-Ew8X-6-ZL3ZurlTiAwy19w/pub?output=csv';
@@ -1097,10 +1098,8 @@ const App: React.FC = () => {
 
         if (currentPage === 'biblioteca') {
             return (
-                <div className="flex flex-col items-center justify-center h-[60vh] text-center border border-white/5 rounded-xl bg-[#0a0a0a] animate-in fade-in duration-500">
-                    <Star size={48} className="text-[#D4AF37] mb-6 animate-pulse" />
-                    <h2 className="text-sm font-bold text-white uppercase tracking-widest mb-2 font-sans">MÓDULO EM DESENVOLVIMENTO</h2>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-black max-w-md font-sans">ENGENHARIA REVERSA DE ADS</p>
+                <div className="w-full h-full flex flex-col">
+                    <AdLibrary />
                 </div>
             );
         }
@@ -1526,7 +1525,7 @@ const App: React.FC = () => {
         }
 
         return (
-            <div className="animate-in fade-in duration-500 max-w-7xl mx-auto font-sans antialiased pb-20 pt-2 px-2">
+            <div className="animate-in fade-in duration-500 w-full font-sans antialiased pb-20 pt-2 px-8 md:px-12">
                 <style dangerouslySetInnerHTML={{ __html: `
                   @keyframes marquee-scroll {
                     0% { transform: translateX(0); }
@@ -1970,8 +1969,13 @@ const App: React.FC = () => {
           ].map(mod => (
             <button key={mod.id} onClick={() => handleModuleChange(mod.id)} 
               style={mod.color && currentModule !== mod.id ? { color: mod.color, borderColor: mod.color } : {}}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all border whitespace-nowrap ${currentModule === mod.id && mod.id !== 'comunidade' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30' : 'text-zinc-500 border-transparent hover:bg-white/5'}`}>
-              <mod.icon size={14} /> <span className="text-[10px] font-black uppercase tracking-widest">{mod.label}</span>
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all border whitespace-nowrap ${
+                currentModule === mod.id && mod.id !== 'comunidade' 
+                  ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30' 
+                  : 'text-white font-medium drop-shadow-md hover:text-zinc-200 border-transparent hover:bg-white/5'
+              }`}>
+              <mod.icon size={15} className={currentModule === mod.id && mod.id !== 'comunidade' ? 'text-[#D4AF37]' : 'text-white'} /> 
+              <span className="text-xs uppercase tracking-widest font-bold">{mod.label}</span>
             </button>
           ))}
         </nav>
@@ -1994,28 +1998,34 @@ const App: React.FC = () => {
         {currentModule !== 'home' && (
           <Sidebar currentModule={currentModule} currentPage={currentPage} activeFolderId={null} folders={[]} setCurrentPage={setCurrentPage} setActiveFolderId={() => {}} createNewFolder={() => {}} activeViralTab={activeViralTab} setActiveViralTab={setActiveViralTab} />
         )}
-        <main className={`flex-1 p-8 overflow-y-auto h-[calc(100vh-65px)] ${currentModule !== 'home' ? 'ml-60' : ''} flex flex-col justify-between`}>
-            <div className="flex-1">
+        <main className={
+          currentPage === 'biblioteca'
+            ? `flex-1 h-[calc(100vh-65px)] overflow-hidden ${currentModule !== 'home' ? 'ml-60' : ''} flex flex-col`
+            : `flex-1 p-8 overflow-y-auto h-[calc(100vh-65px)] ${currentModule !== 'home' ? 'ml-60' : ''} flex flex-col justify-between`
+        }>
+            <div className={currentPage === 'biblioteca' ? "flex-1 h-full overflow-hidden" : "flex-1"}>
               {renderContent()}
             </div>
             
-            <footer className="border-t border-white/5 py-8 text-center bg-[#030303]/50 mt-12 relative z-10">
-              <div className="max-w-6xl mx-auto px-6">
-                <p 
-                  className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest select-none"
-                >
-                  © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
-                </p>
-                <div
-                  onDoubleClick={() => {
-                    setCurrentPage('admin_dashboard');
-                    setCurrentModule('admin');
-                  }}
-                  className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-default select-none"
-                  style={{ opacity: 0 }}
-                />
-              </div>
-            </footer>
+            {currentPage !== 'biblioteca' && (
+              <footer className="border-t border-white/5 py-8 text-center bg-[#030303]/50 mt-12 relative z-10">
+                <div className="max-w-6xl mx-auto px-6">
+                  <p 
+                    className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest select-none"
+                  >
+                    © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
+                  </p>
+                  <div
+                    onDoubleClick={() => {
+                      setCurrentPage('admin_dashboard');
+                      setCurrentModule('admin');
+                    }}
+                    className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-default select-none"
+                    style={{ opacity: 0 }}
+                  />
+                </div>
+              </footer>
+            )}
         </main>
       </div>
     </div>
