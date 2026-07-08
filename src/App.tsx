@@ -3,7 +3,7 @@ import {
   Flame, Smartphone, Sparkles, HelpCircle, HomeIcon, 
   ShieldCheck, MessageCircle, Search, Star, FileText, ExternalLink,
   FolderOpen, Youtube, Facebook, Target, Radar, Download, Briefcase, Puzzle,
-  RefreshCw, TrendingUp, Sliders, Clock, Layers, Activity, Globe, CheckCircle2, Terminal, Award, LogOut
+  RefreshCw, TrendingUp, Sliders, Clock, Layers, Activity, Globe, CheckCircle2, Terminal, Award, LogOut, Beaker
 } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { OfferDetails } from './components/OfferDetails';
@@ -719,10 +719,23 @@ const App: React.FC = () => {
 
   const handleModuleChange = (mod: string) => {
     if (mod === 'comunidade') { window.open(COMMUNITY_LINK, '_blank'); return; }
+    if (mod === 'lab_ia') {
+      setCurrentModule('laboratorio');
+      setCurrentPage('lab');
+      return;
+    }
+    if (mod === 'lab_expert') {
+      setCurrentModule('laboratorio');
+      setCurrentPage('expert');
+      return;
+    }
+    if (mod === 'laboratorio') {
+      setCurrentModule('laboratorio');
+      setCurrentPage('lab');
+      return;
+    }
     setCurrentModule(mod);
     if(mod === 'swiper') setCurrentPage('cofre');
-    if(mod === 'lab_ia') setCurrentPage('lab');
-    if(mod === 'lab_expert') setCurrentPage('expert');
     if(mod === 'organicos') setCurrentPage('virais');
     if(mod === 'central') setCurrentPage('suporte');
     if(mod === 'home') setCurrentPage('dashboard');
@@ -1962,8 +1975,7 @@ const App: React.FC = () => {
             { id: 'home', icon: HomeIcon, label: 'Home' },
             { id: 'swiper', icon: Flame, label: '007 Swiper' },
             { id: 'organicos', icon: Smartphone, label: 'Virais Orgânicos' },
-            { id: 'lab_ia', icon: Sparkles, label: 'Lab I.A.' },
-            { id: 'lab_expert', icon: Award, label: 'Lab de Expert' },
+            { id: 'laboratorio', icon: Beaker, label: 'Laboratório' },
             { id: 'central', icon: HelpCircle, label: 'Central 007' },
             { id: 'comunidade', icon: MessageCircle, label: 'Comunidade VIP', color: '#25D366' }
           ].map(mod => (
@@ -1975,7 +1987,7 @@ const App: React.FC = () => {
                   : 'text-white font-medium drop-shadow-md hover:text-zinc-200 border-transparent hover:bg-white/5'
               }`}>
               <mod.icon size={15} className={currentModule === mod.id && mod.id !== 'comunidade' ? 'text-[#D4AF37]' : 'text-white'} /> 
-              <span className="text-xs uppercase tracking-widest font-bold">{mod.label}</span>
+              <span className="text-xs uppercase tracking-wide font-medium">{mod.label}</span>
             </button>
           ))}
         </nav>

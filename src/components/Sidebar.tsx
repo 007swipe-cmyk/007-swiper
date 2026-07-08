@@ -23,12 +23,12 @@ const SidebarItem: React.FC<{ icon: any; label: string; active: boolean; onClick
     onClick={onClick} 
     className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
       active 
-        ? 'bg-[#1a1a1a] text-[#D4AF37] font-black border-l-2 border-[#D4AF37]' 
+        ? 'bg-[#1a1a1a] text-[#D4AF37] border-l-2 border-[#D4AF37]' 
         : 'text-white hover:text-zinc-100 hover:bg-[#121212]'
     }`}
   >
     <Icon size={16} className={active ? 'text-[#D4AF37]' : 'text-white'} />
-    <span className="text-sm uppercase tracking-widest font-bold">{label}</span>
+    <span className={`text-xs uppercase tracking-wide transition-all ${active ? 'font-semibold text-[#D4AF37]' : 'font-medium'}`}>{label}</span>
   </button>
 );
 
@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {currentModule === 'home' && (
           <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Visão Geral</p>
+            <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Visão Geral</p>
             <SidebarItem icon={HomeIcon} label="Dashboard" active={currentPage === 'dashboard'} onClick={() => setCurrentPage('dashboard')} />
           </div>
         )}
@@ -51,14 +51,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {currentModule === 'swiper' && (
           <div className="space-y-6">
             <div className="space-y-1">
-              <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Inteligência</p>
+              <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Inteligência</p>
               <SidebarItem icon={Briefcase} label="OFERTAS VALIDADAS" active={currentPage === 'cofre'} onClick={() => { setCurrentPage('cofre'); setActiveFolderId(null); }} />
               <SidebarItem icon={Facebook} label="BIBLIOTECA FACEBOOK" active={currentPage === 'biblioteca'} onClick={() => { setCurrentPage('biblioteca'); setActiveFolderId(null); }} />
               <SidebarItem icon={Radar} label="INTERCEPTADOR WEB" active={currentPage === 'interceptador'} onClick={() => { setCurrentPage('interceptador'); setActiveFolderId(null); }} />
               <SidebarItem icon={Puzzle} label="EXTENSÃO DE CAPTURA" active={currentPage === 'extensao'} onClick={() => { setCurrentPage('extensao'); setActiveFolderId(null); }} />
             </div>
             <div className="space-y-1">
-              <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">FAVORITOS</p>
+              <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">FAVORITOS</p>
               <SidebarItem icon={Star} label="FAVORITOS" active={currentPage === 'favoritos'} onClick={() => { setCurrentPage('favoritos'); setActiveFolderId(null); }} />
             </div>
           </div>
@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* --- VIRAIS ORGÂNICOS --- */}
         {currentModule === 'organicos' && (
           <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Redes de Mineração</p>
+            <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Redes de Mineração</p>
             <SidebarItem 
               icon={Smartphone} 
               label="TikTok Trends" 
@@ -89,26 +89,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* --- LAB I.A. --- */}
-        {currentModule === 'lab_ia' && (
-          <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Ferramentas I.A.</p>
-            <SidebarItem icon={Sparkles} label="LAB I.A." active={currentPage === 'lab'} onClick={() => setCurrentPage('lab')} />
-          </div>
-        )}
-
-        {/* --- LAB DE EXPERT --- */}
-        {currentModule === 'lab_expert' && (
-          <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Estrategista Oculto</p>
-            <SidebarItem icon={Award} label="LAB DE EXPERT" active={currentPage === 'expert'} onClick={() => setCurrentPage('expert')} />
+        {/* --- LABORATÓRIO --- */}
+        {currentModule === 'laboratorio' && (
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Ferramentas I.A.</p>
+              <SidebarItem icon={Sparkles} label="LAB I.A." active={currentPage === 'lab'} onClick={() => setCurrentPage('lab')} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Estrategista Oculto</p>
+              <SidebarItem icon={Award} label="LAB DE EXPERT" active={currentPage === 'expert'} onClick={() => setCurrentPage('expert')} />
+            </div>
           </div>
         )}
 
         {/* --- CENTRAL 007 --- */}
         {currentModule === 'central' && (
           <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest px-4 mb-2">Base de Suporte</p>
+            <p className="text-[9px] font-bold uppercase text-zinc-600 tracking-wider px-4 mb-2">Base de Suporte</p>
             <SidebarItem icon={SupportIcon} label="Suporte Técnico" active={currentPage === 'suporte'} onClick={() => setCurrentPage('suporte')} />
           </div>
         )}
