@@ -252,7 +252,7 @@ export const AdLibrary: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAdData = async () => {
+  const fetchAdData = async (query?: string) => {
     setIsLoading(true);
     setError(null);
     const token = import.meta.env.VITE_APIFY_API_TOKEN;
@@ -262,6 +262,10 @@ export const AdLibrary: React.FC = () => {
       setIsLoading(false);
       return;
     }
+
+    const queryList = query && query.trim() !== '' 
+      ? [query.trim()] 
+      : ["marketing digital", "ganhar dinheiro", "dropshipping", "suplemento"];
 
     try {
       const controller = new AbortController();
@@ -275,7 +279,7 @@ export const AdLibrary: React.FC = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            queries: ["marketing digital", "ganhar dinheiro", "dropshipping", "suplemento"],
+            queries: queryList,
             country: "BR",
             adActiveStatus: "ACTIVE",
             resultsLimit: 20
@@ -311,7 +315,16 @@ export const AdLibrary: React.FC = () => {
         if (fallbackRes.ok) {
           const rawItems = await fallbackRes.json();
           if (Array.isArray(rawItems) && rawItems.length > 0) {
-            const mapped = rawItems.map((item, idx) => mapApifyAdToAd(item, idx));
+            let filteredRaw = rawItems;
+            if (query && query.trim() !== '') {
+              const q = query.toLowerCase().trim();
+              filteredRaw = rawItems.filter((item: any) => {
+                const pageName = (item.pageName || item.page_name || item.pageProfile?.name || '').toLowerCase();
+                const bodyText = (item.bodyText || item.adText || item.text || item.adBody || item.snapshot?.body?.text || item.snapshot?.text || '').toLowerCase();
+                return pageName.includes(q) || bodyText.includes(q);
+              });
+            }
+            const mapped = filteredRaw.map((item, idx) => mapApifyAdToAd(item, idx));
             setAds(mapped);
             setIsLoading(false);
             return;
@@ -320,7 +333,16 @@ export const AdLibrary: React.FC = () => {
         throw new Error("Last dataset items also empty or failed to load");
       } catch (err: any) {
         console.error("All Apify requests failed. Using local cached mock data.", err.message || err);
-        setAds(INITIAL_MOCK_ADS);
+        
+        let fallbackAds = INITIAL_MOCK_ADS;
+        if (query && query.trim() !== '') {
+          const q = query.toLowerCase().trim();
+          fallbackAds = INITIAL_MOCK_ADS.filter(ad => 
+            ad.advertiserName.toLowerCase().includes(q) || 
+            ad.bodyText.toLowerCase().includes(q)
+          );
+        }
+        setAds(fallbackAds);
         setError("Não foi possível carregar os dados ao vivo do Apify (limite de cota ou erro de API). Exibindo base de dados local salva.");
         setIsLoading(false);
       }
@@ -474,15 +496,26 @@ export const AdLibrary: React.FC = () => {
           </div>
 
           {/* Top Bar - Large Search input */}
-          <div className="relative group">
+          <div className="relative group flex items-center">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-red-500 transition-colors duration-200" />
             <input
               type="text"
-              placeholder="Buscar por anunciante, palavras-chave do texto, transcrições..."
+              placeholder="Buscar por anunciante ou palavra-chave... (Pressione Enter para buscar ao vivo)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl py-3.5 pl-12 pr-4 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] focus:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchAdData(searchQuery);
+                }
+              }}
+              className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl py-3.5 pl-12 pr-36 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] focus:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
             />
+            <button
+              onClick={() => fetchAdData(searchQuery)}
+              className="absolute right-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] active:scale-[0.98] cursor-pointer"
+            >
+              Buscar Ao Vivo
+            </button>
           </div>
 
           {/* Stylesheet inline for custom skeleton scanline */}
@@ -511,7 +544,7 @@ export const AdLibrary: React.FC = () => {
                 </p>
               </div>
               <button 
-                onClick={() => fetchAdData()}
+                onClick={() => fetchAdData(searchQuery)}
                 className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-red-950/40 hover:bg-red-900/40 border border-red-500/20 px-3.5 py-1.5 rounded-lg text-red-400 hover:text-white transition-all cursor-pointer shrink-0"
               >
                 <RefreshCw size={10} className="animate-spin" />
