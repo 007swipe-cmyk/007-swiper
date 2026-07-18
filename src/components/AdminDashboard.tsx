@@ -59,7 +59,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   };
 
   const formatLastActive = (val: any) => {
-    if (!val) return 'MOCK SESSION';
+    if (!val) return 'Não registrado';
     
     // Check if Firestore Timestamp
     if (val && typeof val.toDate === 'function') {

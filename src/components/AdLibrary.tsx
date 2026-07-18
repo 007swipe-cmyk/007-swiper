@@ -162,13 +162,7 @@ export const AdLibrary: React.FC = () => {
   const fetchAdData = async (query?: string) => {
     setIsLoading(true);
     setError(null);
-    const token = import.meta.env.VITE_APIFY_API_TOKEN;
-    if (!token) {
-      setError("Token de acesso VITE_APIFY_API_TOKEN não configurado no arquivo .env ou no painel da Vercel.");
-      setAds([]);
-      setIsLoading(false);
-      return;
-    }
+    const API_TOKEN = import.meta.env.VITE_APIFY_API_TOKEN;
 
     try {
       if (query && query.trim() !== '') {
@@ -187,16 +181,18 @@ export const AdLibrary: React.FC = () => {
           maxItems: 20
         };
 
-        console.log('Status do Token:', import.meta.env.VITE_APIFY_API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
+        console.log('Status do Token:', API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
         console.log("Apify request payload:", payload);
 
+        if (!API_TOKEN) throw new Error('TOKEN_FALTANDO: A variável VITE_APIFY_API_TOKEN não foi encontrada no build.');
+
         const response = await fetch(
-          `https://api.apify.com/v2/acts/apify~facebook-ads-scraper/run-sync-get-dataset-items?token=${token}`,
+          `https://api.apify.com/v2/acts/apify~facebook-ads-scraper/run-sync-get-dataset-items?token=${API_TOKEN}`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${API_TOKEN}`
             },
             body: JSON.stringify(payload),
             signal: controller.signal
@@ -217,13 +213,16 @@ export const AdLibrary: React.FC = () => {
           throw new Error("Resposta da API do Apify inválida ou vazia.");
         }
       } else {
-        console.log('Status do Token:', import.meta.env.VITE_APIFY_API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
+        console.log('Status do Token:', API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
+        
+        if (!API_TOKEN) throw new Error('TOKEN_FALTANDO: A variável VITE_APIFY_API_TOKEN não foi encontrada no build.');
+
         // Fast initial/empty load from the last run dataset
         const response = await fetch(
-          `https://api.apify.com/v2/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${token}`,
+          `https://api.apify.com/v2/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${API_TOKEN}`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${API_TOKEN}`
             }
           }
         );
