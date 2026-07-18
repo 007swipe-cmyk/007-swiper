@@ -164,64 +164,43 @@ export const AdLibrary: React.FC = () => {
     setError(null);
 
     try {
-      if (query && query.trim() !== '') {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 seconds timeout for live sync scraper run
+      const searchQuery = (query || '').trim();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 seconds timeout for live sync scraper run
 
-        const startUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&search_type=keyword_unordered&q=${encodeURIComponent(query.trim())}`;
+      const startUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&search_type=keyword_unordered&q=${encodeURIComponent(searchQuery)}`;
 
-        const payload = {
-          startUrls: [
-            { url: startUrl }
-          ],
-          searchTerms: [query.trim()],
-          country: "BR",
-          activeStatus: "active",
-          maxItems: 20
-        };
+      const payload = {
+        startUrls: [
+          { url: startUrl }
+        ],
+        searchTerms: searchQuery ? [searchQuery] : [],
+        country: "BR",
+        activeStatus: "active",
+        maxItems: 20
+      };
 
-        console.log("Apify request payload:", payload);
+      console.log("Apify request payload:", payload);
 
-        const response = await fetch(
-          '/api/apify',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          }
-        );
-        
-        clearTimeout(timeoutId);
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          throw new Error(`Erro na API do Apify (Status ${response.status})`);
-        }
+      if (!response.ok) {
+        throw new Error(`Erro na API do Apify (Status ${response.status})`);
+      }
 
-        const rawItems = await response.json();
-        if (Array.isArray(rawItems)) {
-          const mapped = rawItems.map((item, idx) => mapApifyAdToAd(item, idx));
-          setAds(mapped);
-        } else {
-          throw new Error("Resposta da API do Apify inválida ou vazia.");
-        }
+      const rawItems = await response.json();
+      if (Array.isArray(rawItems)) {
+        const mapped = rawItems.map((item, idx) => mapApifyAdToAd(item, idx));
+        setAds(mapped);
       } else {
-        // Fast initial/empty load from the last run dataset
-        const response = await fetch('/api/apify');
-
-        if (!response.ok) {
-          throw new Error(`Erro ao buscar o último dataset (Status ${response.status})`);
-        }
-
-        const rawItems = await response.json();
-        if (Array.isArray(rawItems)) {
-          const mapped = rawItems.map((item, idx) => mapApifyAdToAd(item, idx));
-          setAds(mapped);
-        } else {
-          throw new Error("Nenhum item encontrado no último dataset.");
-        }
+        throw new Error("Resposta da API do Apify inválida ou vazia.");
       }
     } catch (e: any) {
       console.error("Erro ao buscar dados da biblioteca de anúncios:", e);
