@@ -164,7 +164,7 @@ export const AdLibrary: React.FC = () => {
     setError(null);
     const token = import.meta.env.VITE_APIFY_API_TOKEN;
     if (!token) {
-      setError("Token de acesso VITE_APIFY_API_TOKEN não configurado no arquivo .env.");
+      setError("Token de acesso VITE_APIFY_API_TOKEN não configurado no arquivo .env ou no painel da Vercel.");
       setAds([]);
       setIsLoading(false);
       return;
@@ -187,6 +187,7 @@ export const AdLibrary: React.FC = () => {
           maxItems: 20
         };
 
+        console.log('Status do Token:', import.meta.env.VITE_APIFY_API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
         console.log("Apify request payload:", payload);
 
         const response = await fetch(
@@ -195,6 +196,7 @@ export const AdLibrary: React.FC = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(payload),
             signal: controller.signal
@@ -215,9 +217,15 @@ export const AdLibrary: React.FC = () => {
           throw new Error("Resposta da API do Apify inválida ou vazia.");
         }
       } else {
+        console.log('Status do Token:', import.meta.env.VITE_APIFY_API_TOKEN ? 'Presente' : 'Vazio ou Undefined');
         // Fast initial/empty load from the last run dataset
         const response = await fetch(
-          `https://api.apify.com/v2/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${token}`
+          `https://api.apify.com/v2/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${token}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
         );
 
         if (!response.ok) {
