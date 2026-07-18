@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/apify/:match*",
+      "destination": "https://api.apify.com/v2/:match*"
+    }
+  ]
+}

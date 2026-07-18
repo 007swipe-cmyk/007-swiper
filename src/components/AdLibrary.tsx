@@ -187,7 +187,7 @@ export const AdLibrary: React.FC = () => {
         if (!API_TOKEN) throw new Error('TOKEN_FALTANDO: A variável VITE_APIFY_API_TOKEN não foi encontrada no build.');
 
         const response = await fetch(
-          `https://api.apify.com/v2/acts/apify~facebook-ads-scraper/run-sync-get-dataset-items?token=${API_TOKEN}`,
+          `/api/apify/acts/apify~facebook-ads-scraper/run-sync-get-dataset-items?token=${API_TOKEN}`,
           {
             method: 'POST',
             headers: {
@@ -219,7 +219,7 @@ export const AdLibrary: React.FC = () => {
 
         // Fast initial/empty load from the last run dataset
         const response = await fetch(
-          `https://api.apify.com/v2/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${API_TOKEN}`,
+          `/api/apify/actors/apify~facebook-ads-scraper/runs/last/dataset/items?token=${API_TOKEN}`,
           {
             headers: {
               'Authorization': `Bearer ${API_TOKEN}`
