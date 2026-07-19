@@ -9,6 +9,7 @@ import { OfferDetails } from './components/OfferDetails';
 import { LandingPage } from './components/LandingPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdLibrary } from './components/AdLibrary';
+import { TelemetryHUD } from './components/TelemetryHUD';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 
@@ -1473,7 +1474,7 @@ const App: React.FC = () => {
             { id: 'home', icon: HomeIcon, label: 'HOME', page: 'dashboard', module: 'home' },
             { id: 'ofertas', icon: Briefcase, label: 'OFERTAS VALIDADAS', page: 'cofre', module: 'swiper' },
             { id: 'biblioteca', icon: Facebook, label: 'BIBLIOTECA FACEBOOK', page: 'biblioteca', module: 'swiper' },
-            { id: 'interceptador', icon: Radar, label: 'RADAR DE GANCHOS', page: 'interceptador', module: 'swiper' },
+            // { id: 'interceptador', icon: Radar, label: 'RADAR DE GANCHOS', page: 'interceptador', module: 'swiper' },
             { id: 'extensao', icon: Puzzle, label: 'EXTENSÃO', page: 'extensao', module: 'swiper' },
             { id: 'favoritos', icon: Star, label: 'FAVORITOS', page: 'favoritos', module: 'swiper' },
             { id: 'central', icon: HelpCircle, label: 'CENTRAL 007', page: 'suporte', module: 'central' },
@@ -1536,7 +1537,8 @@ const App: React.FC = () => {
             );
           })}
         </nav>
-        <div className="flex items-center shrink-0 pl-4">
+        <div className="flex items-center shrink-0 pl-4 gap-4">
+          <TelemetryHUD />
           <button 
             onClick={() => {
               if (window.confirm('Deseja realmente sair?')) {
