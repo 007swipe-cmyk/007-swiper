@@ -108,6 +108,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // FORCE SAVE TEST DOCUMENT FOR FB INTEGRATION
+    await addDoc(collection(db, 'facebook_ads'), {
+      id: 'test_id_' + Date.now(),
+      texto: 'anúncio de teste',
+      nomeAnunciante: 'Anunciante de Teste',
+      videoUrl: '',
+      dataCaptura: new Date().toISOString()
+    });
+
     // Call Apify actor synchronous execution endpoint with a strict budget limit override payload
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
     const apifyReq = await fetch(apifyUrl, {
@@ -137,13 +146,15 @@ export default async function handler(req, res) {
       const item = items[i];
       const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
       
-      if (!videoUrl) continue; // Skip items without videos
+      // TEMPORARILY DISABLED: Skip items without videos check
+      // if (!videoUrl) continue;
 
       const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
       
-      // Upload video to Bunny Stream
-      const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
-      if (!bunnyVideoUrl) continue;
+      // TEMPORARILY DISABLED: Upload video to Bunny Stream check
+      // const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
+      // if (!bunnyVideoUrl) continue;
+      const bunnyVideoUrl = videoUrl || '';
 
       const adDocument = {
         id: adId,
