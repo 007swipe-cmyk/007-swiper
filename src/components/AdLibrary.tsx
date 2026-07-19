@@ -1,30 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Check, RefreshCw, Layers, Flame, HelpCircle } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 import { AdCard, Ad } from './AdCard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-const AdCardSkeleton: React.FC = () => {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex flex-col h-fit relative animate-pulse">
-      <div className="p-4 border-b border-zinc-800/60 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1.5">
-            <div className="h-4 w-12 bg-zinc-800 rounded-full"></div>
-            <div className="h-4 w-16 bg-zinc-800 rounded"></div>
-          </div>
-          <div className="h-6 w-6 bg-zinc-800 rounded-md"></div>
-        </div>
-      </div>
-      <div className="h-40 bg-zinc-800/50"></div>
-    </div>
-  );
-};
+const AdCardSkeleton: React.FC = () => (
+  <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden shadow-lg flex flex-col h-fit animate-pulse p-4">
+    <div className="h-40 bg-zinc-800/50 rounded-lg"></div>
+  </div>
+);
 
 export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedNiche, setSelectedNiche] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -32,19 +20,8 @@ export const AdLibrary: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [searchTargets, setSearchTargets] = useState({
-    transcription: false,
-    fanPage: false,
-    destinationPage: false,
-    texts: true,
-  });
-
-  const [copiesRange, setCopiesRange] = useState({ min: '', max: '' });
-  const [activeDaysRange, setActiveDaysRange] = useState({ min: '', max: '' });
-
   const fetchAdData = async (niche: string) => {
     setIsLoading(true);
-    setError(null);
     try {
       const adsRef = collection(db, 'facebook_ads');
       const q = niche ? query(adsRef, where('nicho', '==', niche)) : adsRef;
@@ -72,9 +49,8 @@ export const AdLibrary: React.FC = () => {
         });
       });
       setAds(list.reverse());
-    } catch (e: any) {
+    } catch (e) {
       console.error("Erro ao carregar anúncios:", e);
-      setError("Erro ao carregar os anúncios.");
       setAds([]);
     } finally {
       setIsLoading(false);
@@ -89,57 +65,38 @@ export const AdLibrary: React.FC = () => {
     localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const filteredAds = ads.filter(ad => {
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase().trim();
-      if (searchTargets.texts && !ad.bodyText.toLowerCase().includes(query)) return false;
-    }
-    return true;
-  });
+  const filteredAds = ads.filter(ad =>
+    ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="w-full h-full flex overflow-hidden font-sans antialiased text-white bg-[#050505]">
-      <div className="flex-1 h-full flex flex-col min-w-0">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <h1 className="text-lg font-black uppercase text-white">Biblioteca Interna</h1>
+    <div className="w-full h-full flex flex-col p-6 bg-[#050505] text-white">
+      <h1 className="text-lg font-black uppercase mb-6">Biblioteca Interna</h1>
 
+      <div className="flex gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 text-zinc-500" size={18} />
           <input
             type="text"
-            placeholder="Buscar palavra-chave..."
+            placeholder="Buscar..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white"
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 pl-10"
           />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {isLoading ? Array.from({ length: 5 }).map((_, i) => <AdCardSkeleton key={i} />) :
-              filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
-          </div>
         </div>
+        <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs">
+          <option value="">TODOS OS NICHOS</option>
+          <option value="truque">TRUQUE</option>
+          <option value="emagrecimento">EMAGRECIMENTO</option>
+          <option value="renda extra">RENDA EXTRA</option>
+        </select>
+        <button onClick={() => fetchAdData(selectedNiche)} className="bg-red-600 p-2.5 rounded-lg"><RefreshCw size={18} /></button>
       </div>
 
-      <div className="w-80 shrink-0 border-l border-zinc-800 bg-zinc-950/80 p-6 space-y-6">
-        <div className="space-y-3">
-          <span className="text-[10px] text-zinc-500 font-black uppercase">Nicho</span>
-          <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 p-2 text-xs text-white">
-            <option value="">TODOS</option>
-            <option value="truque">TRUQUE</option>
-            <option value="emagrecimento">EMAGRECIMENTO</option>
-            <option value="renda extra">RENDA EXTRA</option>
-          </select>
-        </div>
-
-        <div className="space-y-3">
-          <span className="text-[10px] text-zinc-500 font-black uppercase">Filtros</span>
-          <label className="flex items-center justify-between text-xs">
-            Textos <input type="checkbox" checked={searchTargets.texts} onChange={() => setSearchTargets(p => ({ ...p, texts: !p.texts }))} />
-          </label>
-        </div>
-
-        {/* Usando as variáveis para evitar erro de build */}
-        <div className="hidden">
-          {copiesRange.min} {activeDaysRange.min} {SlidersHorizontal.name} {Check.name} {RefreshCw.name} {Layers.name} {Flame.name} {HelpCircle.name}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {isLoading ? Array.from({ length: 4 }).map((_, i) => <AdCardSkeleton key={i} />) :
+          filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
       </div>
     </div>
   );
