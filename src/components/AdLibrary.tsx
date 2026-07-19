@@ -1,116 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Check, RefreshCw, Layers, Flame, HelpCircle } from 'lucide-react';
 import { AdCard, Ad } from './AdCard';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
-const mapApifyAdToAd = (item: any, index: number): Ad => {
-  const id = item.ad_archive_id || item.adArchiveId || item.adArchiveID || item.id || item.adId || `apify_${index}_${Date.now()}`;
-  
-  let status: 'Ativo' | 'Inativo' = 'Ativo';
-  const rawStatus = item.status || item.adActiveStatus || (item.isActive ? 'ACTIVE' : '') || '';
-  if (rawStatus && typeof rawStatus === 'string') {
-    const s = rawStatus.toLowerCase();
-    if (s.includes('inact') || s.includes('inativ') || s.includes('off') || s.includes('inativo')) {
-      status = 'Inativo';
-    }
-  }
 
-  let startDate = 'Recente';
-  const rawDate = item.startDateFormatted || item.startDate || item.start_date || item.adStartDate || item.creationTime || item.adCreationTime;
-  if (rawDate) {
-    if (typeof rawDate === 'string') {
-      try {
-        const d = new Date(rawDate);
-        if (!isNaN(d.getTime())) {
-          startDate = d.toLocaleDateString('pt-BR');
-        } else {
-          startDate = rawDate;
-        }
-      } catch {
-        startDate = rawDate;
-      }
-    } else if (typeof rawDate === 'number') {
-      try {
-        const d = new Date(rawDate > 9999999999 ? rawDate : rawDate * 1000);
-        startDate = d.toLocaleDateString('pt-BR');
-      } catch {
-        startDate = String(rawDate);
-      }
-    }
-  }
-
-  let activeDays = 1;
-  const rawActiveDays = item.activeDays || item.active_days || item.daysActive;
-  if (typeof rawActiveDays === 'number') {
-    activeDays = rawActiveDays;
-  } else if (rawDate) {
-    try {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        const diffTime = Math.abs(Date.now() - d.getTime());
-        activeDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-      }
-    } catch {}
-  } else {
-    activeDays = Math.floor(Math.random() * 15) + 1;
-  }
-
-  let copies = 1;
-  const rawCopies = item.collationCount || item.copies || item.copiesCount || item.count || item.similiarAdsCount || item.similarAdsCount;
-  if (typeof rawCopies === 'number') {
-    copies = rawCopies;
-  } else if (typeof rawCopies === 'string') {
-    const parsed = parseInt(rawCopies, 10);
-    if (!isNaN(parsed)) copies = parsed;
-  }
-
-  const advertiserName = item.pageName || item.page_name || item.advertiserName || item.pageProfile?.name || 'Anunciante';
-
-  let advertiserAvatar = '';
-  const rawAvatar = item.snapshot?.pageProfilePictureUrl || item.pageProfile?.profileImageUrl || item.pageProfile?.profile_image_url || item.advertiserAvatar;
-  if (rawAvatar && typeof rawAvatar === 'string' && rawAvatar.startsWith('http')) {
-    advertiserAvatar = rawAvatar;
-  } else {
-    advertiserAvatar = advertiserName.substring(0, 2).toUpperCase();
-  }
-
-  const pageUrl = item.pageUrl || item.page_url || item.snapshot?.linkUrl || item.linkUrl || `https://facebook.com/ads/library/?id=${id}`;
-  const bodyText = item.bodyText || item.adText || item.text || item.adBody || item.snapshot?.body?.text || item.snapshot?.text || '';
-  const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.video_hd_url || item.snapshot?.videos?.[0]?.videoSdUrl || item.snapshot?.videos?.[0]?.url;
-  const videoThumbnail = item.videoThumbnail || item.video_thumbnail || item.snapshot?.videos?.[0]?.videoPreviewImageUrl || item.snapshot?.images?.[0]?.url || item.snapshot?.images?.[0]?.resized_image_url;
-
-  let category = item.category || 'Geral';
-  if (category === 'Geral' && bodyText) {
-    const textLower = bodyText.toLowerCase();
-    if (textLower.includes('vsl') || textLower.includes('vídeo de 3 minutos')) {
-      category = 'VSL';
-    } else if (textLower.includes('pix') || textLower.includes('renda') || textLower.includes('ganhar')) {
-      category = 'Renda Extra';
-    } else if (textLower.includes('🚨') || textLower.includes('secreto') || textLower.includes('atenção')) {
-      category = 'Pressão';
-    }
-  }
-
-  const transcription = item.transcription || item.transcripts?.[0] || '';
-  const destinationPage = item.destinationPage || item.destination_page || item.snapshot?.linkUrl || item.linkUrl || '';
-
-  return {
-    id,
-    status,
-    startDate,
-    activeDays,
-    copies,
-    advertiserName,
-    advertiserAvatar,
-    pageUrl,
-    bodyText,
-    videoUrl,
-    category,
-    transcription,
-    fanPage: advertiserName,
-    destinationPage,
-    videoThumbnail
-  };
-};
 
 const AdCardSkeleton: React.FC = () => {
   return (
@@ -159,56 +53,39 @@ export const AdLibrary: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAdData = async (query?: string) => {
+  const fetchAdData = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const searchQuery = (query || '').trim();
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout for live sync scraper run
-
-      const startUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&search_type=keyword_unordered&q=${encodeURIComponent(searchQuery)}`;
-
-      const payload = {
-        startUrls: [
-          { url: startUrl }
-        ],
-        searchTerms: searchQuery ? [searchQuery] : [],
-        country: "BR",
-        activeStatus: "active",
-        maxItems: 20
-      };
-
-      console.log("Apify request payload:", payload);
-
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal
+      const adsRef = collection(db, 'facebook_ads');
+      const querySnapshot = await getDocs(adsRef);
+      const list: Ad[] = [];
+      let index = 0;
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          status: 'Ativo',
+          startDate: data.dataCaptura ? new Date(data.dataCaptura).toLocaleDateString('pt-BR') : 'Recente',
+          activeDays: 1,
+          copies: data.copies || 1,
+          advertiserName: data.nomeAnunciante || 'Anunciante',
+          advertiserAvatar: (data.nomeAnunciante || 'Anunciante').substring(0, 2).toUpperCase(),
+          pageUrl: data.paginaDestino || '',
+          bodyText: data.textoAnuncio || '',
+          videoUrl: data.videoUrl || '',
+          category: 'Geral',
+          transcription: '',
+          fanPage: data.nomeAnunciante || '',
+          destinationPage: data.paginaDestino || '',
+          videoThumbnail: ''
+        });
+        index++;
       });
-      
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Erro na API do Apify (Status ${response.status})`);
-      }
-
-      const rawItems = await response.json();
-      if (Array.isArray(rawItems)) {
-        const mapped = rawItems.map((item, idx) => mapApifyAdToAd(item, idx));
-        setAds(mapped);
-      } else {
-        throw new Error("Resposta da API do Apify inválida ou vazia.");
-      }
+      setAds(list.reverse()); // Show latest captures first
     } catch (e: any) {
-      console.error("Erro ao buscar dados da biblioteca de anúncios:", e);
-      let errorMsg = e.message || "Ocorreu um erro ao carregar os dados ao vivo do Apify.";
-      if (e.name === 'AbortError' || errorMsg.includes('aborted') || errorMsg.includes('Abort')) {
-        errorMsg = 'TEMPO DE BUSCA ESGOTADO. O robô demorou mais de 60 segundos para extrair os dados. Tente usar filtros mais restritos.';
-      }
-      setError(errorMsg);
+      console.error("Erro ao carregar anúncios do Firestore:", e);
+      setError("Erro ao carregar os anúncios salvos do banco de dados.");
       setAds([]);
     } finally {
       setIsLoading(false);
@@ -216,8 +93,7 @@ export const AdLibrary: React.FC = () => {
   };
 
   useEffect(() => {
-    // A tela começa vazia por padrão para evitar consumo indesejado de créditos.
-    // O usuário pode digitar e buscar para carregar os dados ao vivo.
+    fetchAdData();
   }, []);
 
   // Search & Basic states
@@ -367,21 +243,22 @@ export const AdLibrary: React.FC = () => {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-red-500 transition-colors duration-200" />
             <input
               type="text"
-              placeholder="Buscar por anunciante ou palavra-chave... (Pressione Enter para buscar ao vivo)"
+              placeholder="Buscar por anunciante ou palavra-chave no banco de dados..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  fetchAdData(searchQuery);
+                  fetchAdData();
                 }
               }}
               className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl py-3.5 pl-12 pr-36 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] focus:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
             />
             <button
-              onClick={() => fetchAdData(searchQuery)}
-              className="absolute right-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] active:scale-[0.98] cursor-pointer"
+              onClick={() => fetchAdData()}
+              className="absolute right-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
             >
-              Buscar Ao Vivo
+              <RefreshCw size={10} className={isLoading ? "animate-spin" : ""} />
+              Sincronizar
             </button>
           </div>
 
@@ -411,11 +288,11 @@ export const AdLibrary: React.FC = () => {
                 </p>
               </div>
               <button 
-                onClick={() => fetchAdData(searchQuery)}
+                onClick={() => fetchAdData()}
                 className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-red-950/40 hover:bg-red-900/40 border border-red-500/20 px-3.5 py-1.5 rounded-lg text-red-400 hover:text-white transition-all cursor-pointer shrink-0"
               >
                 <RefreshCw size={10} className="animate-spin" />
-                <span>Recarregar Ao Vivo</span>
+                <span>Sincronizar Banco</span>
               </button>
             </div>
           )}

@@ -3,6 +3,10 @@
     {
       "path": "/api/cron-organic",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron-adspy",
+      "schedule": "0 0 * * *"
     }
   ]
 }
