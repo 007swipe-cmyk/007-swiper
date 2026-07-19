@@ -97,8 +97,6 @@ export default async function handler(req, res) {
   const libraryId = process.env.BUNNY_LIBRARY_ID;
   const apiKey = process.env.BUNNY_API_KEY;
 
-  console.log('DEBUG_VAR_TASK_ID:', process.env.APIFY_TASK_ID);
-
   if (!APIFY_TASK_ID) {
     return res.status(500).json({ error: 'Erro: APIFY_TASK_ID do Actor não configurado. Execução abortada para prevenção de custos.' });
   }
@@ -110,8 +108,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Call Apify task synchronous execution endpoint with a strict budget limit override payload
-    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${APIFY_TASK_ID}/run-sync-get-dataset-items?token=${API_TOKEN}`;
+    // Call Apify actor synchronous execution endpoint with a strict budget limit override payload
+    const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
     const apifyReq = await fetch(apifyUrl, {
       method: 'POST',
       headers: {
