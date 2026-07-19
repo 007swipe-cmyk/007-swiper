@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Check, RefreshCw, Layers, Flame, HelpCircle } from 'lucide-react';
 import { AdCard, Ad } from './AdCard';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 
@@ -52,6 +52,7 @@ export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNiche, setSelectedNiche] = useState<string>('');
 
   const fetchAdData = async () => {
     setIsLoading(true);
@@ -60,7 +61,7 @@ export const AdLibrary: React.FC = () => {
       const adsRef = collection(db, 'facebook_ads');
       const querySnapshot = await getDocs(adsRef);
       const list: Ad[] = [];
-      let index = 0;
+
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         list.push({
@@ -68,202 +69,206 @@ export const AdLibrary: React.FC = () => {
           status: 'Ativo',
           startDate: data.dataCaptura ? new Date(data.dataCaptura).toLocaleDateString('pt-BR') : 'Recente',
           activeDays: 1,
-          copies: data.copies || 1,
+          copies: 1, // Valor padrão
           advertiserName: data.nomeAnunciante || 'Anunciante',
           advertiserAvatar: (data.nomeAnunciante || 'Anunciante').substring(0, 2).toUpperCase(),
           pageUrl: data.paginaDestino || '',
-          bodyText: data.textoAnuncio || '',
+          bodyText: data.texto || '', // CORREÇÃO: Mapeando 'texto' do Firebase
           videoUrl: data.videoUrl || '',
-          category: 'Geral',
+          category: data.nicho || 'Geral', // CORREÇÃO: Mapeando 'nicho' do Firebase
           transcription: '',
           fanPage: data.nomeAnunciante || '',
           destinationPage: data.paginaDestino || '',
           videoThumbnail: ''
         });
-        index++;
       });
-      setAds(list.reverse()); // Show latest captures first
+      setAds(list.reverse());
     } catch (e: any) {
-      console.error("Erro ao carregar anúncios do Firestore:", e);
-      setError("Erro ao carregar os anúncios salvos do banco de dados.");
+      console.error("Erro ao carregar anúncios:", e);
+      setError("Erro ao carregar os anúncios.");
       setAds([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }; {
+    setIsLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchAdData();
-  }, []);
+useEffect(() => {
+  fetchAdData(selectedNiche);
+}, [selectedNiche]);
 
-  // Search & Basic states
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Advanced Filter states
-  const [searchTargets, setSearchTargets] = useState({
+// Search & Basic states
+const [searchQuery, setSearchQuery] = useState('');
+
+// Advanced Filter states
+const [searchTargets, setSearchTargets] = useState({
+  transcription: false,
+  fanPage: false,
+  destinationPage: false,
+  texts: false,
+});
+
+const [copiesRange, setCopiesRange] = useState({
+  min: '',
+  max: '',
+});
+
+const [activeDaysRange, setActiveDaysRange] = useState({
+  min: '',
+  max: '',
+});
+
+// Favorites state persistent in localStorage
+const [favorites, setFavorites] = useState<string[]>(() => {
+  const saved = localStorage.getItem('swiper_library_favorites');
+  return saved ? JSON.parse(saved) : [];
+});
+
+useEffect(() => {
+  localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
+}, [favorites]);
+
+const handleToggleFavorite = (id: string) => {
+  setFavorites(prev =>
+    prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]
+  );
+};
+
+const handleTargetChange = (key: keyof typeof searchTargets) => {
+  setSearchTargets(prev => ({
+    ...prev,
+    [key]: !prev[key]
+  }));
+};
+
+const handleClearFilters = () => {
+  setSearchQuery('');
+  setSelectedNiche('');
+  setSearchTargets({
     transcription: false,
     fanPage: false,
     destinationPage: false,
     texts: false,
   });
+  setCopiesRange({ min: '', max: '' });
+  setActiveDaysRange({ min: '', max: '' });
+};
 
-  const [copiesRange, setCopiesRange] = useState({
-    min: '',
-    max: '',
-  });
+// Derived state: Filtering Logic from the ads state array
+const filteredAds = ads.filter(ad => {
+  // 1. Copies Range Filter
+  if (copiesRange.min !== '' && ad.copies < parseInt(copiesRange.min, 10)) {
+    return false;
+  }
+  if (copiesRange.max !== '' && ad.copies > parseInt(copiesRange.max, 10)) {
+    return false;
+  }
 
-  const [activeDaysRange, setActiveDaysRange] = useState({
-    min: '',
-    max: '',
-  });
+  // 3. Active Days Range Filter
+  if (activeDaysRange.min !== '' && ad.activeDays < parseInt(activeDaysRange.min, 10)) {
+    return false;
+  }
+  if (activeDaysRange.max !== '' && ad.activeDays > parseInt(activeDaysRange.max, 10)) {
+    return false;
+  }
 
-  // Favorites state persistent in localStorage
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('swiper_library_favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // 4. Text Search Target Filter
+  if (searchQuery.trim() !== '') {
+    const query = searchQuery.toLowerCase().trim();
+    const anyTargetSelected = Object.values(searchTargets).some(val => val);
 
-  useEffect(() => {
-    localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
-  }, [favorites]);
+    if (anyTargetSelected) {
+      let matchesAnyTarget = false;
 
-  const handleToggleFavorite = (id: string) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]
-    );
-  };
-
-  const handleTargetChange = (key: keyof typeof searchTargets) => {
-    setSearchTargets(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setSearchTargets({
-      transcription: false,
-      fanPage: false,
-      destinationPage: false,
-      texts: false,
-    });
-    setCopiesRange({ min: '', max: '' });
-    setActiveDaysRange({ min: '', max: '' });
-  };
-
-  // Derived state: Filtering Logic from the ads state array
-  const filteredAds = ads.filter(ad => {
-    // 1. Copies Range Filter
-    if (copiesRange.min !== '' && ad.copies < parseInt(copiesRange.min, 10)) {
-      return false;
-    }
-    if (copiesRange.max !== '' && ad.copies > parseInt(copiesRange.max, 10)) {
-      return false;
-    }
-
-    // 3. Active Days Range Filter
-    if (activeDaysRange.min !== '' && ad.activeDays < parseInt(activeDaysRange.min, 10)) {
-      return false;
-    }
-    if (activeDaysRange.max !== '' && ad.activeDays > parseInt(activeDaysRange.max, 10)) {
-      return false;
-    }
-
-    // 4. Text Search Target Filter
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase().trim();
-      const anyTargetSelected = Object.values(searchTargets).some(val => val);
-
-      if (anyTargetSelected) {
-        let matchesAnyTarget = false;
-        
-        if (searchTargets.transcription && ad.transcription?.toLowerCase().includes(query)) {
-          matchesAnyTarget = true;
-        }
-        if (searchTargets.fanPage && (ad.fanPage?.toLowerCase().includes(query) || ad.advertiserName.toLowerCase().includes(query))) {
-          matchesAnyTarget = true;
-        }
-        if (searchTargets.destinationPage && (ad.pageUrl.toLowerCase().includes(query) || ad.destinationPage?.toLowerCase().includes(query))) {
-          matchesAnyTarget = true;
-        }
-        if (searchTargets.texts && ad.bodyText.toLowerCase().includes(query)) {
-          matchesAnyTarget = true;
-        }
-
-        if (!matchesAnyTarget) return false;
-      } else {
-        // Default search targets when no checkboxes are checked: searches in bodyText, advertiserName, pageUrl, transcription
-        const matchesDefault = 
-          ad.bodyText.toLowerCase().includes(query) ||
-          ad.advertiserName.toLowerCase().includes(query) ||
-          ad.pageUrl.toLowerCase().includes(query) ||
-          (ad.transcription && ad.transcription.toLowerCase().includes(query));
-        
-        if (!matchesDefault) return false;
+      if (searchTargets.transcription && ad.transcription?.toLowerCase().includes(query)) {
+        matchesAnyTarget = true;
       }
+      if (searchTargets.fanPage && (ad.fanPage?.toLowerCase().includes(query) || ad.advertiserName.toLowerCase().includes(query))) {
+        matchesAnyTarget = true;
+      }
+      if (searchTargets.destinationPage && (ad.pageUrl.toLowerCase().includes(query) || ad.destinationPage?.toLowerCase().includes(query))) {
+        matchesAnyTarget = true;
+      }
+      if (searchTargets.texts && ad.bodyText.toLowerCase().includes(query)) {
+        matchesAnyTarget = true;
+      }
+
+      if (!matchesAnyTarget) return false;
+    } else {
+      // Default search targets when no checkboxes are checked: searches in bodyText, advertiserName, pageUrl, transcription
+      const matchesDefault =
+        ad.bodyText.toLowerCase().includes(query) ||
+        ad.advertiserName.toLowerCase().includes(query) ||
+        ad.pageUrl.toLowerCase().includes(query) ||
+        (ad.transcription && ad.transcription.toLowerCase().includes(query));
+
+      if (!matchesDefault) return false;
     }
+  }
 
-    return true;
-  });
+  return true;
+});
 
-  return (
-    <div className="w-full h-full flex overflow-hidden font-sans antialiased text-white bg-[#050505]">
-      
-      {/* 1. Main Center Content (flexible width) */}
-      <div className="flex-1 h-full flex flex-col min-w-0">
-        
-        {/* Inner Scroll container */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-          
-          {/* Header Title */}
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-            <div>
-              <h1 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                BIBLIOTECA INTERNA DE ANÚNCIOS (AD SPY)
-              </h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">
-                Monitore, filtre e copie criativos e copys de alta conversão diretamente na plataforma.
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-3 bg-zinc-900/60 border border-zinc-800/80 px-3 py-1.5 rounded-lg">
-              <span className="text-[10px] text-zinc-400 font-black uppercase tracking-wider">
-                Anúncios Filtrados:
-              </span>
-              <span className="text-xs font-black text-red-500 font-mono">
-                {filteredAds.length}
-              </span>
-            </div>
+return (
+  <div className="w-full h-full flex overflow-hidden font-sans antialiased text-white bg-[#050505]">
+
+    {/* 1. Main Center Content (flexible width) */}
+    <div className="flex-1 h-full flex flex-col min-w-0">
+
+      {/* Inner Scroll container */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+
+        {/* Header Title */}
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+          <div>
+            <h1 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+              BIBLIOTECA INTERNA DE ANÚNCIOS (AD SPY)
+            </h1>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">
+              Monitore, filtre e copie criativos e copys de alta conversão diretamente na plataforma.
+            </p>
           </div>
 
-          {/* Top Bar - Large Search input */}
-          <div className="relative group flex items-center">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-red-500 transition-colors duration-200" />
-            <input
-              type="text"
-              placeholder="Buscar por anunciante ou palavra-chave no banco de dados..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  fetchAdData();
-                }
-              }}
-              className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl py-3.5 pl-12 pr-36 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] focus:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
-            />
-            <button
-              onClick={() => fetchAdData()}
-              className="absolute right-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
-            >
-              <RefreshCw size={10} className={isLoading ? "animate-spin" : ""} />
-              Sincronizar
-            </button>
+          <div className="flex items-center space-x-3 bg-zinc-900/60 border border-zinc-800/80 px-3 py-1.5 rounded-lg">
+            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-wider">
+              Anúncios Filtrados:
+            </span>
+            <span className="text-xs font-black text-red-500 font-mono">
+              {filteredAds.length}
+            </span>
           </div>
+        </div>
 
-          {/* Stylesheet inline for custom skeleton scanline */}
-          <style dangerouslySetInnerHTML={{ __html: `
+        {/* Top Bar - Large Search input */}
+        <div className="relative group flex items-center">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-red-500 transition-colors duration-200" />
+          <input
+            type="text"
+            placeholder="Buscar por anunciante ou palavra-chave no banco de dados..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                fetchAdData(selectedNiche);
+              }
+            }}
+            className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl py-3.5 pl-12 pr-36 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] focus:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+          />
+          <button
+            onClick={() => fetchAdData(selectedNiche)}
+            className="absolute right-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+          >
+            <RefreshCw size={10} className={isLoading ? "animate-spin" : ""} />
+            Sincronizar
+          </button>
+        </div>
+
+        {/* Stylesheet inline for custom skeleton scanline */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
             @keyframes skeleton-scan {
               0% { top: 0%; }
               50% { top: 100%; }
@@ -278,199 +283,214 @@ export const AdLibrary: React.FC = () => {
             }
           ` }} />
 
-          {/* Error Banner */}
-          {error && (
-            <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0 animate-ping"></span>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">
-                  {error}
-                </p>
-              </div>
-              <button 
-                onClick={() => fetchAdData()}
-                className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-red-950/40 hover:bg-red-900/40 border border-red-500/20 px-3.5 py-1.5 rounded-lg text-red-400 hover:text-white transition-all cursor-pointer shrink-0"
-              >
-                <RefreshCw size={10} className="animate-spin" />
-                <span>Sincronizar Banco</span>
-              </button>
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0 animate-ping"></span>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">
+                {error}
+              </p>
             </div>
-          )}
-
-          {/* Ad Grid */}
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, idx) => (
-                <AdCardSkeleton key={idx} />
-              ))}
-            </div>
-          ) : filteredAds.length === 0 ? (
-            <div className="py-20 flex flex-col items-center justify-center text-center border border-zinc-800/60 rounded-xl bg-zinc-900/10 space-y-4">
-              <div className="p-4 bg-zinc-900/80 border border-zinc-800 text-zinc-500 rounded-full">
-                <Search size={28} className="animate-pulse" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-300">Nenhum anúncio encontrado</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Tente ajustar seus termos de pesquisa ou filtros avançados.</p>
-              </div>
-              <button 
-                onClick={handleClearFilters}
-                className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-4 py-2 rounded-lg text-zinc-300 hover:text-white transition-all cursor-pointer"
-              >
-                <RefreshCw size={11} />
-                <span>Limpar Filtros</span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-in fade-in duration-300">
-              {filteredAds.map(ad => (
-                <AdCard
-                  key={ad.id}
-                  ad={ad}
-                  isFavorite={favorites.includes(ad.id)}
-                  onToggleFavorite={handleToggleFavorite}
-                />
-              ))}
-            </div>
-          )}
-
-        </div>
-
-      </div>
-
-      {/* 2. Right Sidebar (Advanced Filters) */}
-      <div className="w-80 shrink-0 border-l border-zinc-800 bg-zinc-950/80 backdrop-blur-md h-full overflow-y-auto p-6 flex flex-col space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-        
-        {/* Title */}
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-          <div className="flex items-center space-x-2 text-zinc-300">
-            <SlidersHorizontal size={14} className="text-red-500" />
-            <span className="text-xs font-black uppercase tracking-widest">Filtros Avançados</span>
+            <button
+              onClick={() => fetchAdData(selectedNiche)}
+              className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-red-950/40 hover:bg-red-900/40 border border-red-500/20 px-3.5 py-1.5 rounded-lg text-red-400 hover:text-white transition-all cursor-pointer shrink-0"
+            >
+              <RefreshCw size={10} className="animate-spin" />
+              <span>Sincronizar Banco</span>
+            </button>
           </div>
-          
-          <button 
-            onClick={handleClearFilters}
-            className="text-[9px] text-zinc-500 hover:text-red-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"
-            title="Limpar todos os filtros"
-          >
-            <RefreshCw size={10} />
-            <span>Resetar</span>
-          </button>
-        </div>
+        )}
 
-        {/* 2.1 Checkboxes for search targets */}
-        <div className="space-y-3">
-          <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest block">Alvos de Busca</span>
-          
-          <div className="space-y-2">
-            {[
-              { id: 'transcription', label: 'Transcrição' },
-              { id: 'fanPage', label: 'FanPage / Anunciante' },
-              { id: 'destinationPage', label: 'Página Destino' },
-              { id: 'texts', label: 'Textos do Anúncio' }
-            ].map(target => {
-              const isChecked = searchTargets[target.id as keyof typeof searchTargets];
-              return (
-                <label 
-                  key={target.id}
-                  className="flex items-center justify-between p-2.5 rounded-lg border bg-zinc-900/30 hover:bg-zinc-900/60 border-zinc-900 hover:border-zinc-800 cursor-pointer transition-all duration-200 select-none group"
-                >
-                  <span className="text-xs text-zinc-400 group-hover:text-zinc-200 font-medium uppercase tracking-wide">
-                    {target.label}
-                  </span>
-                  
-                  <div 
-                    onClick={() => handleTargetChange(target.id as keyof typeof searchTargets)}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                      isChecked 
-                        ? 'bg-red-600 border-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.3)]' 
-                        : 'bg-zinc-900 border-zinc-800 text-transparent group-hover:border-zinc-700'
-                    }`}
-                  >
-                    {isChecked && <Check size={12} className="stroke-[3]" />}
-                  </div>
-                </label>
-              );
-            })}
+        {/* Ad Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {Array.from({ length: 10 }).map((_, idx) => (
+              <AdCardSkeleton key={idx} />
+            ))}
           </div>
-        </div>
-
-        {/* 2.2 Range Inputs: Quantidade de Cópias */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-            <Layers size={11} className="text-zinc-600" />
-            <span>Quantidade de Cópias</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Min</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="Ex: 1"
-                value={copiesRange.min}
-                onChange={(e) => setCopiesRange(prev => ({ ...prev, min: e.target.value }))}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
-              />
+        ) : filteredAds.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center text-center border border-zinc-800/60 rounded-xl bg-zinc-900/10 space-y-4">
+            <div className="p-4 bg-zinc-900/80 border border-zinc-800 text-zinc-500 rounded-full">
+              <Search size={28} className="animate-pulse" />
             </div>
             <div className="space-y-1">
-              <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Max</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="Ex: 50"
-                value={copiesRange.max}
-                onChange={(e) => setCopiesRange(prev => ({ ...prev, max: e.target.value }))}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
-              />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-300">Nenhum anúncio encontrado</h3>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Tente ajustar seus termos de pesquisa ou filtros avançados.</p>
             </div>
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-4 py-2 rounded-lg text-zinc-300 hover:text-white transition-all cursor-pointer"
+            >
+              <RefreshCw size={11} />
+              <span>Limpar Filtros</span>
+            </button>
           </div>
-        </div>
-
-        {/* 2.3 Range Inputs: Dias Ativos */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-            <Flame size={11} className="text-zinc-600" />
-            <span>Dias Ativos</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Min</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="Ex: 2"
-                value={activeDaysRange.min}
-                onChange={(e) => setActiveDaysRange(prev => ({ ...prev, min: e.target.value }))}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-in fade-in duration-300">
+            {filteredAds.map(ad => (
+              <AdCard
+                key={ad.id}
+                ad={ad}
+                isFavorite={favorites.includes(ad.id)}
+                onToggleFavorite={handleToggleFavorite}
               />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Max</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="Ex: 30"
-                value={activeDaysRange.max}
-                onChange={(e) => setActiveDaysRange(prev => ({ ...prev, max: e.target.value }))}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
-              />
-            </div>
+            ))}
           </div>
-        </div>
-
-        {/* Information box */}
-        <div className="bg-red-950/10 border border-red-500/10 p-3 rounded-lg flex items-start gap-2.5">
-          <HelpCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
-          <p className="text-[9px] text-zinc-500 uppercase tracking-normal leading-normal font-semibold">
-            ESTE MÓDULO RODA INTEGRAÇÕES DIRETAS COM METAPixel E GRAPH API DO FACEBOOK ADS. A VELOCIDADE DE ATUALIZAÇÃO DA FILTRAGEM É EM TEMPO REAL.
-          </p>
-        </div>
+        )}
 
       </div>
 
     </div>
-  );
+
+    {/* 2. Right Sidebar (Advanced Filters) */}
+    <div className="w-80 shrink-0 border-l border-zinc-800 bg-zinc-950/80 backdrop-blur-md h-full overflow-y-auto p-6 flex flex-col space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+
+      {/* Title */}
+      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+        <div className="flex items-center space-x-2 text-zinc-300">
+          <SlidersHorizontal size={14} className="text-red-500" />
+          <span className="text-xs font-black uppercase tracking-widest">Filtros Avançados</span>
+        </div>
+
+        <button
+          onClick={handleClearFilters}
+          className="text-[9px] text-zinc-500 hover:text-red-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"
+          title="Limpar todos os filtros"
+        >
+          <RefreshCw size={10} />
+          <span>Resetar</span>
+        </button>
+      </div>
+
+      {/* Niche Category Filter */}
+      <div className="space-y-3">
+        <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest block">Nicho / Categoria</span>
+        <select
+          value={selectedNiche}
+          onChange={(e) => setSelectedNiche(e.target.value)}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors cursor-pointer uppercase font-bold tracking-wide"
+        >
+          <option value="">TODOS OS NICHOS</option>
+          <option value="truque">TRUQUE</option>
+          <option value="emagrecimento">EMAGRECIMENTO</option>
+          <option value="renda extra">RENDA EXTRA</option>
+          <option value="beleza">BELEZA</option>
+        </select>
+      </div>
+
+      {/* 2.1 Checkboxes for search targets */}
+      <div className="space-y-3">
+        <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest block">Alvos de Busca</span>
+
+        <div className="space-y-2">
+          {[
+            { id: 'transcription', label: 'Transcrição' },
+            { id: 'fanPage', label: 'FanPage / Anunciante' },
+            { id: 'destinationPage', label: 'Página Destino' },
+            { id: 'texts', label: 'Textos do Anúncio' }
+          ].map(target => {
+            const isChecked = searchTargets[target.id as keyof typeof searchTargets];
+            return (
+              <label
+                key={target.id}
+                className="flex items-center justify-between p-2.5 rounded-lg border bg-zinc-900/30 hover:bg-zinc-900/60 border-zinc-900 hover:border-zinc-800 cursor-pointer transition-all duration-200 select-none group"
+              >
+                <span className="text-xs text-zinc-400 group-hover:text-zinc-200 font-medium uppercase tracking-wide">
+                  {target.label}
+                </span>
+
+                <div
+                  onClick={() => handleTargetChange(target.id as keyof typeof searchTargets)}
+                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${isChecked
+                      ? 'bg-red-600 border-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+                      : 'bg-zinc-900 border-zinc-800 text-transparent group-hover:border-zinc-700'
+                    }`}
+                >
+                  {isChecked && <Check size={12} className="stroke-[3]" />}
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2.2 Range Inputs: Quantidade de Cópias */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+          <Layers size={11} className="text-zinc-600" />
+          <span>Quantidade de Cópias</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Min</span>
+            <input
+              type="number"
+              min="0"
+              placeholder="Ex: 1"
+              value={copiesRange.min}
+              onChange={(e) => setCopiesRange(prev => ({ ...prev, min: e.target.value }))}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
+            />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Max</span>
+            <input
+              type="number"
+              min="0"
+              placeholder="Ex: 50"
+              value={copiesRange.max}
+              onChange={(e) => setCopiesRange(prev => ({ ...prev, max: e.target.value }))}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 2.3 Range Inputs: Dias Ativos */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+          <Flame size={11} className="text-zinc-600" />
+          <span>Dias Ativos</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Min</span>
+            <input
+              type="number"
+              min="0"
+              placeholder="Ex: 2"
+              value={activeDaysRange.min}
+              onChange={(e) => setActiveDaysRange(prev => ({ ...prev, min: e.target.value }))}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
+            />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider">Max</span>
+            <input
+              type="number"
+              min="0"
+              placeholder="Ex: 30"
+              value={activeDaysRange.max}
+              onChange={(e) => setActiveDaysRange(prev => ({ ...prev, max: e.target.value }))}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 outline-none focus:border-red-500/50 transition-colors placeholder:text-zinc-700 font-mono"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Information box */}
+      <div className="bg-red-950/10 border border-red-500/10 p-3 rounded-lg flex items-start gap-2.5">
+        <HelpCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+        <p className="text-[9px] text-zinc-500 uppercase tracking-normal leading-normal font-semibold">
+          ESTE MÓDULO RODA INTEGRAÇÕES DIRETAS COM METAPixel E GRAPH API DO FACEBOOK ADS. A VELOCIDADE DE ATUALIZAÇÃO DA FILTRAGEM É EM TEMPO REAL.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+);
 };
