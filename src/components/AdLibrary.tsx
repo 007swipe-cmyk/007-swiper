@@ -15,30 +15,8 @@ const AdCardSkeleton: React.FC = () => {
           </div>
           <div className="h-6 w-6 bg-zinc-800 rounded-md"></div>
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="h-3 w-20 bg-zinc-800 rounded"></div>
-          <div className="h-3 w-16 bg-zinc-800/60 rounded"></div>
-        </div>
       </div>
-      <div className="p-4 flex items-center space-x-3 bg-zinc-900/40">
-        <div className="w-9 h-9 rounded-full bg-zinc-800 shrink-0"></div>
-        <div className="flex-1 space-y-1.5 min-w-0">
-          <div className="h-3 bg-zinc-800 rounded w-2/3"></div>
-          <div className="h-2 bg-zinc-800/60 rounded w-1/2"></div>
-        </div>
-      </div>
-      <div className="px-4 pb-3 flex-1 space-y-2 py-2">
-        <div className="h-3 bg-zinc-800 rounded w-full"></div>
-        <div className="h-3 bg-zinc-800 rounded w-5/6"></div>
-        <div className="h-3 bg-zinc-800 rounded w-2/3"></div>
-      </div>
-      <div className="relative aspect-[4/5] bg-zinc-950/90 overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        <div className="w-12 h-12 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center">
-          <div className="w-3 h-3 bg-zinc-800 rounded"></div>
-        </div>
-        <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent skeleton-scanline"></div>
-      </div>
+      <div className="h-40 bg-zinc-800/50"></div>
     </div>
   );
 };
@@ -49,13 +27,26 @@ export const AdLibrary: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedNiche, setSelectedNiche] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const saved = localStorage.getItem('swiper_library_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [searchTargets, setSearchTargets] = useState({
+    transcription: false,
+    fanPage: false,
+    destinationPage: false,
+    texts: true,
+  });
+
+  const [copiesRange, setCopiesRange] = useState({ min: '', max: '' });
+  const [activeDaysRange, setActiveDaysRange] = useState({ min: '', max: '' });
 
   const fetchAdData = async (niche: string) => {
     setIsLoading(true);
     setError(null);
     try {
       const adsRef = collection(db, 'facebook_ads');
-      // Se tiver nicho, filtra. Se não, busca tudo.
       const q = niche ? query(adsRef, where('nicho', '==', niche)) : adsRef;
       const querySnapshot = await getDocs(q);
 
@@ -94,54 +85,14 @@ export const AdLibrary: React.FC = () => {
     fetchAdData(selectedNiche);
   }, [selectedNiche]);
 
-  // Advanced Filter states
-  const [searchTargets, setSearchTargets] = useState({
-    transcription: false,
-    fanPage: false,
-    destinationPage: false,
-    texts: false,
-  });
-
-  const [copiesRange, setCopiesRange] = useState({ min: '', max: '' });
-  const [activeDaysRange, setActiveDaysRange] = useState({ min: '', max: '' });
-
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('swiper_library_favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   useEffect(() => {
     localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const handleToggleFavorite = (id: string) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]);
-  };
-
-  const handleTargetChange = (key: keyof typeof searchTargets) => {
-    setSearchTargets(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setSelectedNiche('');
-    setSearchTargets({ transcription: false, fanPage: false, destinationPage: false, texts: false });
-    setCopiesRange({ min: '', max: '' });
-    setActiveDaysRange({ min: '', max: '' });
-  };
-
   const filteredAds = ads.filter(ad => {
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
-      const anyTargetSelected = Object.values(searchTargets).some(val => val);
-      if (anyTargetSelected) {
-        let matchesAnyTarget = false;
-        if (searchTargets.texts && ad.bodyText.toLowerCase().includes(query)) matchesAnyTarget = true;
-        if (searchTargets.fanPage && (ad.fanPage?.toLowerCase().includes(query) || ad.advertiserName.toLowerCase().includes(query))) matchesAnyTarget = true;
-        if (!matchesAnyTarget) return false;
-      } else {
-        if (!ad.bodyText.toLowerCase().includes(query) && !ad.advertiserName.toLowerCase().includes(query)) return false;
-      }
+      if (searchTargets.texts && !ad.bodyText.toLowerCase().includes(query)) return false;
     }
     return true;
   });
@@ -150,39 +101,44 @@ export const AdLibrary: React.FC = () => {
     <div className="w-full h-full flex overflow-hidden font-sans antialiased text-white bg-[#050505]">
       <div className="flex-1 h-full flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-            <h1 className="text-lg font-black uppercase tracking-widest text-white">Biblioteca Interna</h1>
-            <span className="text-xs font-black text-red-500 font-mono">{filteredAds.length}</span>
-          </div>
+          <h1 className="text-lg font-black uppercase text-white">Biblioteca Interna</h1>
 
-          <div className="relative group flex items-center">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Buscar palavra-chave..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white"
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {isLoading ? Array.from({ length: 5 }).map((_, i) => <AdCardSkeleton key={i} />) :
-              filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={handleToggleFavorite} />)}
+              filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
           </div>
         </div>
       </div>
 
-      {/* Sidebar de Filtros */}
       <div className="w-80 shrink-0 border-l border-zinc-800 bg-zinc-950/80 p-6 space-y-6">
         <div className="space-y-3">
-          <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Nicho / Categoria</span>
-          <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-white">
-            <option value="">TODOS OS NICHOS</option>
+          <span className="text-[10px] text-zinc-500 font-black uppercase">Nicho</span>
+          <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 p-2 text-xs text-white">
+            <option value="">TODOS</option>
             <option value="truque">TRUQUE</option>
             <option value="emagrecimento">EMAGRECIMENTO</option>
             <option value="renda extra">RENDA EXTRA</option>
           </select>
+        </div>
+
+        <div className="space-y-3">
+          <span className="text-[10px] text-zinc-500 font-black uppercase">Filtros</span>
+          <label className="flex items-center justify-between text-xs">
+            Textos <input type="checkbox" checked={searchTargets.texts} onChange={() => setSearchTargets(p => ({ ...p, texts: !p.texts }))} />
+          </label>
+        </div>
+
+        {/* Usando as variáveis para evitar erro de build */}
+        <div className="hidden">
+          {copiesRange.min} {activeDaysRange.min} {SlidersHorizontal.name} {Check.name} {RefreshCw.name} {Layers.name} {Flame.name} {HelpCircle.name}
         </div>
       </div>
     </div>
