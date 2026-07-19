@@ -16,9 +16,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Download video buffer from Facebook and upload to Bunny.net Storage
-async function uploadToBunny(videoUrl, adId, index, storageZone, apiKey) {
+// Create video on Bunny Stream and upload the video buffer
+async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
   try {
+    // 1. Download video buffer from Facebook
     const videoRes = await fetch(videoUrl);
     if (!videoRes.ok) {
       console.warn(`Failed to fetch video from ${videoUrl}: ${videoRes.statusText}`);
@@ -26,10 +27,31 @@ async function uploadToBunny(videoUrl, adId, index, storageZone, apiKey) {
     }
     const arrayBuffer = await videoRes.arrayBuffer();
 
-    const fileName = `ad_${adId || Date.now()}_${index}.mp4`;
-    const bunnyUrl = `https://storage.bunnycdn.com/${storageZone}/${fileName}`;
+    // 2. Step 1: Create Video Entry on Bunny Stream
+    const createRes = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
+      method: 'POST',
+      headers: {
+        'AccessKey': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title: "Ad_Facebook_" + Date.now() })
+    });
 
-    const uploadRes = await fetch(bunnyUrl, {
+    if (!createRes.ok) {
+      const createErr = await createRes.text();
+      console.error(`Bunny Stream create video entry failed: ${createRes.status} - ${createErr}`);
+      return null;
+    }
+
+    const videoInfo = await createRes.json();
+    const guid = videoInfo.guid;
+    if (!guid) {
+      console.error("Bunny Stream did not return a video guid.");
+      return null;
+    }
+
+    // 3. Step 2: Upload Video Buffer
+    const uploadRes = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`, {
       method: 'PUT',
       headers: {
         'AccessKey': apiKey,
@@ -39,14 +61,15 @@ async function uploadToBunny(videoUrl, adId, index, storageZone, apiKey) {
     });
 
     if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      console.error(`Bunny upload failed: ${uploadRes.status} - ${errText}`);
+      const uploadErr = await uploadRes.text();
+      console.error(`Bunny Stream upload video buffer failed: ${uploadRes.status} - ${uploadErr}`);
       return null;
     }
 
-    return `https://${storageZone}.b-cdn.net/${fileName}`;
+    // Return the formatted Bunny Stream video Pull Zone CDN URL
+    return `https://vz-3e45a7a6-1ed.b-cdn.net/${guid}/play_720p.mp4`;
   } catch (error) {
-    console.error(`Error uploading video for ad ${adId}:`, error);
+    console.error("Error uploading video to Bunny Stream:", error);
     return null;
   }
 }
@@ -67,14 +90,14 @@ export default async function handler(req, res) {
   }
 
   const API_TOKEN = process.env.VITE_APIFY_API_TOKEN;
-  const storageZone = process.env.BUNNY_STORAGE_ZONE;
+  const libraryId = process.env.BUNNY_LIBRARY_ID;
   const apiKey = process.env.BUNNY_API_KEY;
 
   if (!API_TOKEN) {
     return res.status(500).json({ error: 'Token Apify VITE_APIFY_API_TOKEN ausente no servidor.' });
   }
-  if (!storageZone || !apiKey) {
-    return res.status(500).json({ error: 'Configurações do Bunny.net ausentes (BUNNY_STORAGE_ZONE ou BUNNY_API_KEY).' });
+  if (!libraryId || !apiKey) {
+    return res.status(500).json({ error: 'Configurações do Bunny.net ausentes (BUNNY_LIBRARY_ID ou BUNNY_API_KEY).' });
   }
 
   try {
@@ -105,23 +128,21 @@ export default async function handler(req, res) {
 
     const savedDocs = [];
     
-    // Process items and upload videos to Bunny.net Storage sequentially
+    // Process items and upload videos to Bunny Stream sequentially
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
       
       if (!videoUrl) continue; // Skip items without videos
 
-      const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
-      
-      // Upload raw video buffer to Bunny CDN
-      const bunnyVideoUrl = await uploadToBunny(videoUrl, adId, i, storageZone, apiKey);
+      // Upload video to Bunny Stream
+      const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
       if (!bunnyVideoUrl) continue;
 
       const adDocument = {
         nomeAnunciante: item.pageName || item.page_name || item.advertiserName || 'Anunciante',
         textoAnuncio: item.bodyText || item.adText || item.text || '',
-        videoUrl: bunnyVideoUrl, // Use the Bunny CDN URL, never direct Facebook CDN
+        videoUrl: bunnyVideoUrl, // Use the Bunny Stream public CDN URL
         paginaDestino: item.pageUrl || item.page_url || item.destinationPage || item.snapshot?.linkUrl || '',
         dataCaptura: new Date().toISOString()
       };
