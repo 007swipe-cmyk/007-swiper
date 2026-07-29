@@ -1257,11 +1257,34 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Painel de Status da Plataforma */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-4">
+                        {[
+                            { label: 'Criativos Mapeados', value: '+5.000', detail: 'Atualizado em tempo real' },
+                            { label: 'Ofertas de Elite', value: 'Validadas', detail: 'Curadoria manual avançada' },
+                            { label: 'Status do Robô', value: 'Ativo & Operacional', detail: 'Sincronização contínua' }
+                        ].map((stat, i) => (
+                            <div 
+                                key={i} 
+                                className="bg-[#0a0a0a]/80 backdrop-blur-md border border-amber-500/20 p-5 rounded-2xl flex flex-col justify-between hover:scale-[1.03] transition-all duration-300 relative overflow-hidden shadow-lg group hover:border-[#D4AF37]/40"
+                            >
+                                <div className="absolute top-0 right-0 w-12 h-12 bg-[#D4AF37]/1 rounded-bl-full pointer-events-none"></div>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{stat.label}</span>
+                                <div className="mt-2 flex items-baseline gap-2">
+                                    <span className="text-xl font-black text-white uppercase tracking-tight group-hover:text-[#D4AF37] transition-all">
+                                        {stat.value}
+                                    </span>
+                                </div>
+                                <span className="text-[9px] text-zinc-600 font-medium uppercase mt-1 tracking-wide">{stat.detail}</span>
+                            </div>
+                        ))}
+                    </div>
+
                     {/* Exclusive Tools Grid */}
                     <div className="space-y-4">
                         <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">FERRAMENTAS EXCLUSIVAS</h3>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             
                             {/* OFERTAS VALIDADAS */}
                             <button 
@@ -1270,18 +1293,23 @@ const App: React.FC = () => {
                                     setCurrentPage('cofre');
                                     setSelectedOffer(null);
                                 }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[170px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
                             >
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
                                 <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
                                     <Briefcase size={20} />
                                 </div>
-                                <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS DE ELITE</h4>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Base de Inteligência</p>
-                                    <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
-                                        Acesse ofertas validadas, scripts e infraestrutura de vendas dos concorrentes.
-                                    </p>
+                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS DE ELITE</h4>
+                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Base de Inteligência</p>
+                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                            Acesse VSLs, scripts e estrutura de vendas validadas dos concorrentes.
+                                        </p>
+                                    </div>
+                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                        Acessar Biblioteca
+                                    </div>
                                 </div>
                             </button>
 
@@ -1292,83 +1320,76 @@ const App: React.FC = () => {
                                     setCurrentPage('biblioteca');
                                     setSelectedOffer(null);
                                 }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[170px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
                             >
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
                                 <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
                                     <Facebook size={20} />
                                 </div>
-                                <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">AD SPY FACEBOOK</h4>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Espionagem de Criativos</p>
-                                    <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
-                                        Explore nossa biblioteca interna de anúncios para obter insights imediatos.
-                                    </p>
+                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">AD SPY FACEBOOK</h4>
+                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Espionagem de Criativos</p>
+                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                            Explore e filtre nossa biblioteca interna de anúncios para minerar criativos e copies.
+                                        </p>
+                                    </div>
+                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                        Iniciar Espionagem
+                                    </div>
                                 </div>
                             </button>
 
-                            {/* RADAR DE GANCHOS */}
-                            <button 
-                                onClick={() => {
-                                    setCurrentModule('swiper');
-                                    setCurrentPage('interceptador');
-                                    setSelectedOffer(null);
-                                }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[170px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
-                                <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <Radar size={20} />
-                                </div>
-                                <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">RADAR DE GANCHOS</h4>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Espionagem Orgânica</p>
-                                    <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
-                                        Rastreie ganchos e visualizações dos vídeos orgânicos virais (TikTok, Reels, Shorts) mais quentes do mercado.
-                                    </p>
-                                </div>
-                            </button>
-
-                            {/* EXTENSÃO */}
+                            {/* EXTENSÃO 007 */}
                             <button 
                                 onClick={() => {
                                     setCurrentModule('swiper');
                                     setCurrentPage('extensao');
                                     setSelectedOffer(null);
                                 }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[170px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
                             >
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
                                 <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
                                     <Puzzle size={20} />
                                 </div>
-                                <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">EXTENSÃO</h4>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Central de Captura</p>
-                                    <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
-                                        Baixe a extensão oficial do 007 Swiper para minerar vídeos e desbloquear downloads.
-                                    </p>
+                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">EXTENSÃO 007</h4>
+                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Central de Captura</p>
+                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                            Instale nossa extensão exclusiva para capturar anúncios e fazer downloads com 1 clique.
+                                        </p>
+                                    </div>
+                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                        Baixar Extensão
+                                    </div>
                                 </div>
                             </button>
 
-                            {/* VIRAIS ORGÂNICOS */}
+                            {/* CENTRAL 007 / SUPORTE */}
                             <button 
                                 onClick={() => {
-                                    setCurrentModule('organicos');
-                                    setCurrentPage('virais');
+                                    setCurrentModule('central');
+                                    setCurrentPage('suporte');
                                 }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[170px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
                             >
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
                                 <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <Smartphone size={20} />
+                                    <HelpCircle size={20} />
                                 </div>
-                                <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">VIRAIS ORGÂNICOS</h4>
-                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Mapeamento de Tendências</p>
-                                    <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
-                                        Monitore os criativos e vídeos orgânicos que estão viralizando nas redes sociais.
-                                    </p>
+                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">CENTRAL 007</h4>
+                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Suporte e Comunidade</p>
+                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                            Suporte direto, tutoriais de uso e comunidade privada de membros.
+                                        </p>
+                                    </div>
+                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                        Acessar Central
+                                    </div>
                                 </div>
                             </button>
 
@@ -1462,7 +1483,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white overflow-hidden font-sans antialiased">
+    <div className="flex min-h-screen bg-[#050505] text-white font-sans antialiased">
 
       <header className="h-[65px] bg-[#0a0a0a] border-b border-white/5 fixed top-0 left-0 w-full z-50 flex items-center px-6 shadow-xl">
         <div className="flex items-center space-x-3 shrink-0 border-r border-zinc-800 pr-6 mr-6">
@@ -1536,10 +1557,10 @@ const App: React.FC = () => {
       <div className="flex flex-1 mt-[65px] w-full">
         <main className={
           currentPage === 'biblioteca'
-            ? `flex-1 h-[calc(100vh-65px)] overflow-hidden flex flex-col`
-            : `flex-1 p-8 overflow-y-auto h-[calc(100vh-65px)] flex flex-col justify-between`
+            ? `flex-1 flex flex-col min-h-[calc(100vh-65px)]`
+            : `flex-1 p-8 flex flex-col justify-between min-h-[calc(100vh-65px)]`
         }>
-            <div className={currentPage === 'biblioteca' ? "flex-1 h-full overflow-hidden" : "flex-1"}>
+            <div className="flex-1">
               {renderContent()}
             </div>
             
