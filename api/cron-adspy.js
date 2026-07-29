@@ -109,16 +109,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // FORCE SAVE TEST DOCUMENT FOR FB INTEGRATION
-    await addDoc(collection(db, 'facebook_ads'), {
-      id: 'test_id_' + Date.now(),
-      texto: `anúncio de teste (${niche})`,
-      nomeAnunciante: 'Anunciante de Teste',
-      videoUrl: '',
-      dataCaptura: new Date().toISOString(),
-      nicho: niche
-    });
-
     // Call Apify actor synchronous execution endpoint with a strict budget limit override payload
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
     const apifyReq = await fetch(apifyUrl, {
@@ -127,7 +117,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
+        startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
         maxResult: 10,
         proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
       })
@@ -143,13 +133,19 @@ export default async function handler(req, res) {
 
     const savedDocs = [];
     
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 7);
+
     // Process items and upload videos to Bunny Stream sequentially
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      const startDateStr = item.startDate || item.start_date || item.snapshot?.creation_time || item.creationTime;
+      if (startDateStr && new Date(startDateStr) > cutoffDate) continue;
+
       const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
       
-      // TEMPORARILY DISABLED: Skip items without videos check
-      // if (!videoUrl) continue;
+      // Skip items without videos check
+      if (!videoUrl) continue;
  
       const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
       
