@@ -77,7 +77,19 @@ export const AdLibrary: React.FC = () => {
     setVisibleCount(12);
   }, [selectedNiche, searchQuery, activeDaysFilter, copiesFilter]);
 
-  const filteredAds = ads.filter(ad => {
+  const validAds = ads.filter((ad) => {
+    const hasMedia = Boolean(ad.videoUrl || ad.videoThumbnail || (ad as any).imageUrl);
+    const isNotDummy = 
+      ad.advertiserName !== 'ANUNCIANTE DE TESTE' && 
+      ad.advertiserName !== 'ANUNCIANTE' && 
+      ad.advertiserName !== 'Anunciante' &&
+      ad.fanPage !== 'ANUNCIANTE DE TESTE' &&
+      ad.fanPage !== 'ANUNCIANTE' &&
+      ad.fanPage !== 'Anunciante';
+    return hasMedia && isNotDummy;
+  });
+
+  const filteredAds = validAds.filter(ad => {
     const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase());
 
