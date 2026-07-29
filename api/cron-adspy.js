@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 export const maxDuration = 60; // Max execution duration for Vercel Hobby plan
 
@@ -18,6 +18,67 @@ const db = getFirestore(app);
 
 // Configurable Apify Task ID
 const APIFY_TASK_ID = process.env.APIFY_TASK_ID;
+
+// List of 30 Niches for automatic rotation
+const NICHES_POOL = [
+  // Português
+  "emagrecimento",
+  "renda extra",
+  "relacionamento",
+  "marketing digital",
+  "investimentos",
+  "beleza",
+  "desenvolvimento pessoal",
+  "saude",
+  "idiomas",
+  "produtividade",
+  // Inglês
+  "weight loss",
+  "make money online",
+  "dating tips",
+  "digital marketing",
+  "investing",
+  "beauty products",
+  "self improvement",
+  "health tips",
+  "learn english",
+  "productivity hacks",
+  // Espanhol
+  "perdida de peso",
+  "ganar dinero online",
+  "consejos de citas",
+  "marketing digital",
+  "inversiones",
+  "productos de belleza",
+  "desarrollo personal",
+  "consejos de salud",
+  "aprender espanol",
+  "consejos de productividad"
+];
+
+// Clean up ads older than 30 days
+async function purgeOldAds(firestoreDb) {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoIso = thirtyDaysAgo.toISOString();
+
+    const adsRef = collection(firestoreDb, 'facebook_ads');
+    const q = query(adsRef, where('dataCaptura', '<', thirtyDaysAgoIso));
+    const querySnapshot = await getDocs(q);
+
+    let deletedCount = 0;
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(doc(firestoreDb, 'facebook_ads', docSnap.id));
+      deletedCount++;
+    }
+    console.log(`[Purge] Deleted ${deletedCount} ads older than 30 days.`);
+    return deletedCount;
+  } catch (error) {
+    console.error("[Purge] Error during database cleanup:", error);
+    return 0;
+  }
+}
 
 // Create video on Bunny Stream and upload the video buffer
 async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
@@ -83,20 +144,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // Security checks: Validate Vercel standard cron header OR query param bypass (Temporarily disabled for manual testing)
-  // const authHeader = req.headers.authorization;
-  // const cronSecret = process.env.CRON_SECRET;
-  // const bypassParam = req.query.bypass === '007spy';
-
-  // const expectedToken = `Bearer ${cronSecret}`;
-  // if (cronSecret && authHeader !== expectedToken && authHeader !== cronSecret && !bypassParam) {
-  //   return res.status(401).end();
-  // }
-
   const API_TOKEN = process.env.VITE_APIFY_API_TOKEN;
   const libraryId = process.env.BUNNY_LIBRARY_ID;
   const apiKey = process.env.BUNNY_API_KEY;
-  const niche = req.query.niche || 'truque';
+
+  // Global Niche Rotation & Fallback
+  let niche = req.query.niche;
+  if (!niche) {
+    const randomIndex = Math.floor(Math.random() * NICHES_POOL.length);
+    niche = NICHES_POOL[randomIndex];
+  }
 
   if (!APIFY_TASK_ID) {
     return res.status(500).json({ error: 'Erro: APIFY_TASK_ID do Actor não configurado. Execução abortada para prevenção de custos.' });
@@ -109,7 +166,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Call Apify actor synchronous execution endpoint with a strict budget limit override payload
+    // 1. Run database cleanup (Purge ads older than 30 days)
+    const deletedCount = await purgeOldAds(db);
+
+    // 2. Call Apify actor synchronous execution endpoint with a strict budget limit override payload
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
     const apifyReq = await fetch(apifyUrl, {
       method: 'POST',
@@ -118,7 +178,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
-        maxResult: 10,
+        maxResult: 40,
         proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
       })
     });
@@ -133,44 +193,64 @@ export default async function handler(req, res) {
 
     const savedDocs = [];
     
+    // Golden Rule cutoff date (7 days ago)
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 7);
 
     // Process items and upload videos to Bunny Stream sequentially
     for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const startDateStr = item.startDate || item.start_date || item.snapshot?.creation_time || item.creationTime;
-      if (startDateStr && new Date(startDateStr) > cutoffDate) continue;
+      try {
+        const item = items[i];
 
-      const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
-      
-      // Skip items without videos check
-      if (!videoUrl) continue;
- 
-      const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
-      
-      // Upload video to Bunny Stream check
-      const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
-      if (!bunnyVideoUrl) continue;
+        // Regra de Ouro: Skip ads running for less than 7 days
+        const startDateStr = item.startDate || item.start_date || item.snapshot?.creation_time || item.creationTime;
+        if (startDateStr && new Date(startDateStr) > cutoffDate) continue;
 
-      const adDocument = {
-        id: adId,
-        videoUrl: bunnyVideoUrl,
-        texto: item.bodyText || item.adText || item.text || '',
-        nomeAnunciante: item.pageName || item.page_name || item.advertiserName || 'Anunciante',
-        paginaDestino: item.pageUrl || item.page_url || item.destinationPage || item.snapshot?.linkUrl || '',
-        dataCaptura: new Date().toISOString(),
-        nicho: niche
-      };
+        const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
+        const imageUrl = item.imageUrl || item.image_url || item.snapshot?.images?.[0]?.original_image_url || item.snapshot?.images?.[0]?.resized_image_url || '';
+        const texto = item.bodyText || item.adText || item.text || '';
 
-      const docRef = await addDoc(collection(db, 'facebook_ads'), adDocument);
-      savedDocs.push({ id: docRef.id, ...adDocument });
+        // Skip ads without text, video and image/thumbnail to avoid saving garbage
+        if (!videoUrl && !imageUrl && !texto) continue;
+
+        let bunnyVideoUrl = '';
+        if (videoUrl) {
+          try {
+            const uploadedUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
+            if (uploadedUrl) {
+              bunnyVideoUrl = uploadedUrl;
+            }
+          } catch (uploadErr) {
+            console.error(`[Upload Bunny Stream] Failed at index ${i}:`, uploadErr);
+          }
+        }
+
+        const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
+
+        const adDocument = {
+          id: adId,
+          videoUrl: bunnyVideoUrl,
+          imageUrl: imageUrl,
+          texto: texto,
+          nomeAnunciante: item.pageName || item.page_name || item.advertiserName || 'Anunciante',
+          paginaDestino: item.pageUrl || item.page_url || item.destinationPage || item.snapshot?.linkUrl || '',
+          dataCaptura: new Date().toISOString(),
+          nicho: niche
+        };
+
+        const docRef = await addDoc(collection(db, 'facebook_ads'), adDocument);
+        savedDocs.push({ id: docRef.id, ...adDocument });
+      } catch (itemError) {
+        console.error(`[Process Item Error] Failed to process item at index ${i}:`, itemError);
+      }
     }
 
     return res.status(200).json({
       message: 'AdSpy Cron executed successfully',
+      nicheExecuted: niche,
       adsFetched: items.length,
-      adsProcessedWithVideo: savedDocs.length,
+      adsProcessed: savedDocs.length,
+      deletedOldAdsCount: deletedCount,
       savedDocs
     });
   } catch (error) {

@@ -45,7 +45,7 @@ export const AdLibrary: React.FC = () => {
           transcription: '',
           fanPage: data.nomeAnunciante || '',
           destinationPage: data.paginaDestino || '',
-          videoThumbnail: ''
+          videoThumbnail: data.imageUrl || data.thumbnailUrl || data.videoThumbnail || ''
         });
       });
       setAds(list.reverse());
