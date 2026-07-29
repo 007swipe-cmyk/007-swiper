@@ -149,10 +149,9 @@ export default async function handler(req, res) {
  
       const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
       
-      // TEMPORARILY DISABLED: Upload video to Bunny Stream check
-      // const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
-      // if (!bunnyVideoUrl) continue;
-      const bunnyVideoUrl = videoUrl || '';
+      // Upload video to Bunny Stream check
+      const bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey);
+      if (!bunnyVideoUrl) continue;
 
       const adDocument = {
         id: adId,
