@@ -178,7 +178,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
-        maxResult: 100,
+        maxAds: 100,
+        maxItems: 100,
+        resultsLimit: 100,
         proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
       })
     });
