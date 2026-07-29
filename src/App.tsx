@@ -1165,7 +1165,7 @@ const App: React.FC = () => {
         }
 
         return (
-            <div className="animate-in fade-in duration-500 w-full font-sans antialiased pb-20 pt-2 px-8 md:px-12">
+            <div className="animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden font-sans antialiased pb-20 pt-2 px-8 md:px-12">
                 <style dangerouslySetInnerHTML={{ __html: `
                   @keyframes marquee-scroll {
                     0% { transform: translateX(0); }
@@ -1284,7 +1284,7 @@ const App: React.FC = () => {
                     <div className="space-y-4">
                         <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">FERRAMENTAS EXCLUSIVAS</h3>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto py-4">
                             
                             {/* OFERTAS VALIDADAS */}
                             <button 
