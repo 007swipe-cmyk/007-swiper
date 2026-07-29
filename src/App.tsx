@@ -1165,7 +1165,7 @@ const App: React.FC = () => {
         }
 
         return (
-            <div className="animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden font-sans antialiased pb-20 pt-2 px-8 md:px-12">
+            <div className="animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden min-h-screen bg-[#050505] text-white px-4 md:px-8 py-6 font-sans antialiased pb-20">
                 <style dangerouslySetInnerHTML={{ __html: `
                   @keyframes marquee-scroll {
                     0% { transform: translateX(0); }
@@ -1205,54 +1205,56 @@ const App: React.FC = () => {
                         </h3>
                         
                         <div className="relative w-full overflow-hidden py-1 mask-marquee-glow rounded-xl border border-white/5 bg-[#070707] p-2">
-                            <div className="animate-marquee-infinite gap-4">
-                                {displayOffers.concat(displayOffers).map((offer, idx) => {
-                                    const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
-                                    const isFav = favorites.includes(offer.id);
-                                    return (
-                                        <div 
-                                            key={idx} 
-                                            onClick={() => {
-                                                setSelectedOffer(offer);
-                                                setCurrentModule('swiper');
-                                                setCurrentPage('cofre');
-                                            }}
-                                            className="flex-shrink-0 w-72 bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden group hover:border-[#D4AF37]/35 hover:scale-[1.02] transition-all duration-300 relative cursor-pointer"
-                                        >
-                                            <div className="h-40 overflow-hidden relative bg-black">
-                                                <img 
-                                                    src={imgUrl} 
-                                                    alt={offer.title} 
-                                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
-                                                />
-                                                
-                                                {/* Trend Badge */}
-                                                <span className="absolute top-2 left-2 bg-black/80 border border-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
-                                                    {offer.trend || 'ALTA CONVERSÃO'}
-                                                </span>
-
-                                                {/* Favorite Toggle Button */}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleFavoriteToggle(offer.id);
-                                                    }}
-                                                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 border border-white/10 hover:border-[#D4AF37]/50 text-zinc-400 hover:text-[#D4AF37] transition-all"
-                                                >
-                                                    <Star size={14} className={isFav ? "fill-[#D4AF37] text-[#D4AF37]" : ""} />
-                                                </button>
+                            <div className="w-full overflow-x-auto scrollbar-hide no-scrollbar py-2 my-4">
+                                <div className="flex gap-4 w-max animate-marquee-infinite">
+                                    {displayOffers.concat(displayOffers).map((offer, idx) => {
+                                        const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
+                                        const isFav = favorites.includes(offer.id);
+                                        return (
+                                            <div 
+                                                key={idx} 
+                                                onClick={() => {
+                                                    setSelectedOffer(offer);
+                                                    setCurrentModule('swiper');
+                                                    setCurrentPage('cofre');
+                                                }}
+                                                className="flex-shrink-0 w-72 bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden group hover:border-[#D4AF37]/35 hover:scale-[1.02] transition-all duration-300 relative cursor-pointer"
+                                            >
+                                                <div className="h-40 overflow-hidden relative bg-black">
+                                                    <img 
+                                                        src={imgUrl} 
+                                                        alt={offer.title} 
+                                                        className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
+                                                    />
+                                                    
+                                                    {/* Trend Badge */}
+                                                    <span className="absolute top-2 left-2 bg-black/80 border border-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                                                        {offer.trend || 'ALTA CONVERSÃO'}
+                                                    </span>
+    
+                                                    {/* Favorite Toggle Button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleFavoriteToggle(offer.id);
+                                                        }}
+                                                        className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 border border-white/10 hover:border-[#D4AF37]/50 text-zinc-400 hover:text-[#D4AF37] transition-all"
+                                                    >
+                                                        <Star size={14} className={isFav ? "fill-[#D4AF37] text-[#D4AF37]" : ""} />
+                                                    </button>
+                                                </div>
+                                                <div className="p-3 space-y-1">
+                                                    <h4 className="text-xs md:text-sm font-bold text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#D4AF37] transition-all">
+                                                        {offer.title}
+                                                    </h4>
+                                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                                                        {offer.niche || 'Geral'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="p-3 space-y-1">
-                                                <h4 className="text-xs md:text-sm font-bold text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#D4AF37] transition-all">
-                                                    {offer.title}
-                                                </h4>
-                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                                                    {offer.niche || 'Geral'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1280,11 +1282,10 @@ const App: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Exclusive Tools Grid */}
-                    <div className="space-y-4">
-                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">FERRAMENTAS EXCLUSIVAS</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto py-4">
+                    {/* Container Central das Ferramentas */}
+                    <div className="w-full max-w-5xl mx-auto my-10">
+                        <h2 className="text-sm font-bold tracking-wider text-gray-400 uppercase mb-4">Ferramentas Exclusivas</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             {/* OFERTAS VALIDADAS */}
                             <button 
