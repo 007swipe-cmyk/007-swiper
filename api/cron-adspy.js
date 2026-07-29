@@ -98,8 +98,45 @@ export default async function handler(req, res) {
         const item = items[i];
         if (!item) continue;
 
-        const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
-        const imageUrl = item.imageUrl || item.image_url || item.snapshot?.images?.[0] || item.snapshot?.cards?.[0]?.resized_image_url || '';
+        const videoUrl = 
+          item.videoUrl || 
+          item.video_url || 
+          item.snapshot?.videos?.[0]?.videoHdUrl || 
+          item.snapshot?.videos?.[0]?.videoSdUrl || 
+          item.snapshot?.cards?.[0]?.videoHdUrl || 
+          '';
+        const imageUrl =
+          item.imageUrl ||
+          item.image_url ||
+          item.snapshot?.images?.[0]?.originalImageUrl ||
+          item.snapshot?.images?.[0] ||
+          item.snapshot?.cards?.[0]?.original_image_url ||
+          item.snapshot?.cards?.[0]?.resized_image_url ||
+          '';
+
+        const texto =
+          item.bodyText ||
+          item.adText ||
+          item.text ||
+          item.snapshot?.body?.text ||
+          item.snapshot?.cards?.[0]?.body ||
+          item.snapshot?.markup_card_doc?.body ||
+          '';
+
+        const nomeAnunciante =
+          item.pageName ||
+          item.page_name ||
+          item.advertiserName ||
+          item.snapshot?.page_name ||
+          'Anunciante 007';
+
+        const paginaDestino =
+          item.pageUrl ||
+          item.page_url ||
+          item.destinationPage ||
+          item.snapshot?.linkUrl ||
+          item.snapshot?.cards?.[0]?.link_url ||
+          '';
 
         let bunnyVideoUrl = '';
         if (videoUrl && libraryId && apiKey) {
@@ -112,9 +149,9 @@ export default async function handler(req, res) {
           id: adId,
           videoUrl: bunnyVideoUrl,
           imageUrl: imageUrl,
-          texto: item.bodyText || item.adText || item.text || item.snapshot?.cards?.[0]?.body || '',
-          nomeAnunciante: item.pageName || item.page_name || item.advertiserName || item.snapshot?.page_name || 'Anunciante',
-          paginaDestino: item.pageUrl || item.page_url || item.destinationPage || item.snapshot?.linkUrl || '',
+          texto: texto,
+          nomeAnunciante: nomeAnunciante,
+          paginaDestino: paginaDestino,
           dataCaptura: new Date().toISOString(),
           nicho: niche
         };
