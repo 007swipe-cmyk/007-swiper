@@ -17,6 +17,7 @@ export const AdLibrary: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDaysFilter, setActiveDaysFilter] = useState('all');
   const [copiesFilter, setCopiesFilter] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(12);
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem('swiper_library_favorites');
     return saved ? JSON.parse(saved) : [];
@@ -71,6 +72,10 @@ export const AdLibrary: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
   }, [favorites]);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [selectedNiche, searchQuery, activeDaysFilter, copiesFilter]);
 
   const filteredAds = ads.filter(ad => {
     const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,8 +143,19 @@ export const AdLibrary: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <AdCardSkeleton key={i} />) :
-          filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
+          filteredAds.slice(0, visibleCount).map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
       </div>
+
+      {filteredAds.length > visibleCount && (
+        <div className="flex justify-center items-center my-10 w-full">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + 12)}
+            className="px-8 py-3 bg-amber-400 hover:bg-amber-500 text-black font-bold rounded-lg shadow-lg transition-all transform hover:scale-105"
+          >
+            CARREGAR MAIS ANÚNCIOS ({visibleCount} de {filteredAds.length})
+          </button>
+        </div>
+      )}
     </div>
   );
 };
