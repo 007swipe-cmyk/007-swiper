@@ -19,42 +19,6 @@ const db = getFirestore(app);
 // Configurable Apify Task ID
 const APIFY_TASK_ID = process.env.APIFY_TASK_ID;
 
-// List of 30 Niches for automatic rotation
-const NICHES_POOL = [
-  // Português
-  "emagrecimento",
-  "renda extra",
-  "relacionamento",
-  "marketing digital",
-  "investimentos",
-  "beleza",
-  "desenvolvimento pessoal",
-  "saude",
-  "idiomas",
-  "produtividade",
-  // Inglês
-  "weight loss",
-  "make money online",
-  "dating tips",
-  "digital marketing",
-  "investing",
-  "beauty products",
-  "self improvement",
-  "health tips",
-  "learn english",
-  "productivity hacks",
-  // Espanhol
-  "perdida de peso",
-  "ganar dinero online",
-  "consejos de citas",
-  "marketing digital",
-  "inversiones",
-  "productos de belleza",
-  "desarrollo personal",
-  "consejos de salud",
-  "aprender espanol",
-  "consejos de productividad"
-];
 
 // Clean up ads older than 30 days
 async function purgeOldAds(firestoreDb) {
@@ -148,12 +112,8 @@ export default async function handler(req, res) {
   const libraryId = process.env.BUNNY_LIBRARY_ID;
   const apiKey = process.env.BUNNY_API_KEY;
 
-  // Global Niche Rotation & Fallback
-  let niche = req.query.niche;
-  if (!niche) {
-    const randomIndex = Math.floor(Math.random() * NICHES_POOL.length);
-    niche = NICHES_POOL[randomIndex];
-  }
+  // Retrieve niche from URL query param, fallback to 'emagrecimento'
+  const niche = req.query.niche || 'emagrecimento';
 
   if (!APIFY_TASK_ID) {
     return res.status(500).json({ error: 'Erro: APIFY_TASK_ID do Actor não configurado. Execução abortada para prevenção de custos.' });
@@ -195,25 +155,19 @@ export default async function handler(req, res) {
 
     const savedDocs = [];
     
-    // Golden Rule cutoff date (7 days ago)
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 7);
-
     // Process items and upload videos to Bunny Stream sequentially
     for (let i = 0; i < items.length; i++) {
       try {
         const item = items[i];
 
-        // Regra de Ouro: Skip ads running for less than 7 days
-        const startDateStr = item.startDate || item.start_date || item.snapshot?.creation_time || item.creationTime;
-        if (startDateStr && new Date(startDateStr) > cutoffDate) continue;
+        const adId = item.adArchiveId || item.id || `ad_${i}_${Date.now()}`;
+        const texto = item.bodyText || item.adText || item.text || '';
+
+        // Se o item tiver texto e ID, ele deve ser formatado e salvo
+        if (!texto || !adId) continue;
 
         const videoUrl = item.videoUrl || item.video_url || item.snapshot?.videos?.[0]?.videoHdUrl || item.snapshot?.videos?.[0]?.videoSdUrl || '';
         const imageUrl = item.imageUrl || item.image_url || item.snapshot?.images?.[0]?.original_image_url || item.snapshot?.images?.[0]?.resized_image_url || '';
-        const texto = item.bodyText || item.adText || item.text || '';
-
-        // Skip ads without text, video and image/thumbnail to avoid saving garbage
-        if (!videoUrl && !imageUrl && !texto) continue;
 
         let bunnyVideoUrl = '';
         if (videoUrl) {
@@ -250,10 +204,6 @@ export default async function handler(req, res) {
     return res.status(200).json({
       message: 'AdSpy Cron executed successfully',
       nicheExecuted: niche,
-      adsFetched: items.length,
-      adsProcessed: savedDocs.length,
-      adsProcessedWithVideo: savedDocs.length,
-      deletedOldAdsCount: deletedCount,
       savedDocs
     });
   } catch (error) {
