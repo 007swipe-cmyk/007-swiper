@@ -142,20 +142,20 @@ export const AdCard: React.FC<AdCardProps> = ({ ad, isFavorite, onToggleFavorite
       </div>
 
       {/* Creative Media Simulator */}
-      <div className="relative aspect-[4/5] bg-black group-hover:shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] overflow-hidden flex items-center justify-center">
+      <div className="relative w-full h-80 bg-black overflow-hidden rounded-md flex items-center justify-center">
         {videoUrl ? (
           <video 
             src={videoUrl} 
             poster={posterUrl} 
             controls 
             preload="metadata" 
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-80 object-cover rounded-md bg-black"
           />
         ) : imageUrl ? (
           <img 
             src={imageUrl} 
             alt="Ad Creative" 
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-80 object-cover rounded-md bg-black"
           />
         ) : (
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:16px_16px] w-full h-full"></div>

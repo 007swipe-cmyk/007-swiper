@@ -1487,29 +1487,9 @@ const App: React.FC = () => {
                 <button 
                   key={item.id} 
                   onClick={() => window.open(COMMUNITY_LINK, '_blank')} 
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border border-green-500 text-green-500 hover:bg-green-500/10 whitespace-nowrap"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 whitespace-nowrap"
                 >
-                  <item.icon size={15} className="text-green-500" /> 
-                  <span className="text-xs uppercase tracking-wide font-medium">{item.label}</span>
-                </button>
-              );
-            }
-
-            if (item.id === 'central') {
-              return (
-                <button 
-                  key={item.id} 
-                  onClick={() => {
-                    setCurrentModule(item.module);
-                    setCurrentPage(item.page);
-                  }} 
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30 font-semibold' 
-                      : 'text-yellow-500 border-transparent hover:text-yellow-500 hover:bg-yellow-500/5'
-                  }`}
-                >
-                  <item.icon size={15} className={isActive ? "fill-yellow-500 text-yellow-500" : "text-yellow-500"} /> 
+                  <item.icon size={15} className="text-yellow-500" /> 
                   <span className="text-xs uppercase tracking-wide font-medium">{item.label}</span>
                 </button>
               );

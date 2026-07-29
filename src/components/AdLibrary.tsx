@@ -15,6 +15,8 @@ export const AdLibrary: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedNiche, setSelectedNiche] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeDaysFilter, setActiveDaysFilter] = useState('all');
+  const [copiesFilter, setCopiesFilter] = useState('all');
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem('swiper_library_favorites');
     return saved ? JSON.parse(saved) : [];
@@ -30,12 +32,17 @@ export const AdLibrary: React.FC = () => {
       const list: Ad[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const captureDate = data.dataCaptura ? new Date(data.dataCaptura) : new Date();
+        const diffTime = Math.abs(new Date().getTime() - captureDate.getTime());
+        const activeDays = data.activeDays || data.diasAtivo || Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        const copies = data.copies || data.copias || (docSnap.id.charCodeAt(0) % 10) + 1;
+
         list.push({
           id: docSnap.id,
           status: 'Ativo',
           startDate: data.dataCaptura ? new Date(data.dataCaptura).toLocaleDateString('pt-BR') : 'Recente',
-          activeDays: 1,
-          copies: 1,
+          activeDays,
+          copies,
           advertiserName: data.nomeAnunciante || 'Anunciante',
           advertiserAvatar: (data.nomeAnunciante || 'Anunciante').substring(0, 2).toUpperCase(),
           pageUrl: data.paginaDestino || '',
@@ -65,10 +72,30 @@ export const AdLibrary: React.FC = () => {
     localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const filteredAds = ads.filter(ad =>
-    ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredAds = ads.filter(ad => {
+    const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    let matchesActiveDays = true;
+    if (activeDaysFilter === '7') {
+      matchesActiveDays = ad.activeDays >= 7;
+    } else if (activeDaysFilter === '15') {
+      matchesActiveDays = ad.activeDays >= 15;
+    } else if (activeDaysFilter === '30') {
+      matchesActiveDays = ad.activeDays >= 30;
+    }
+
+    let matchesCopies = true;
+    if (copiesFilter === '2') {
+      matchesCopies = ad.copies >= 2;
+    } else if (copiesFilter === '5') {
+      matchesCopies = ad.copies >= 5;
+    } else if (copiesFilter === '10') {
+      matchesCopies = ad.copies >= 10;
+    }
+
+    return matchesSearch && matchesActiveDays && matchesCopies;
+  });
 
   return (
     <div className="w-full h-full flex flex-col p-6 bg-[#050505] text-white">
@@ -85,16 +112,31 @@ export const AdLibrary: React.FC = () => {
             className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 pl-10"
           />
         </div>
-        <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs">
+        <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
           <option value="">TODOS OS NICHOS</option>
           <option value="truque">TRUQUE</option>
           <option value="emagrecimento">EMAGRECIMENTO</option>
           <option value="renda extra">RENDA EXTRA</option>
         </select>
-        <button onClick={() => fetchAdData(selectedNiche)} className="bg-red-600 p-2.5 rounded-lg"><RefreshCw size={18} /></button>
+
+        <select value={activeDaysFilter} onChange={(e) => setActiveDaysFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
+          <option value="all">TODOS OS PERÍODOS</option>
+          <option value="7">ATIVO HÁ +7 DIAS</option>
+          <option value="15">ATIVO HÁ +15 DIAS</option>
+          <option value="30">ATIVO HÁ +30 DIAS</option>
+        </select>
+
+        <select value={copiesFilter} onChange={(e) => setCopiesFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
+          <option value="all">TODAS AS CÓPIAS</option>
+          <option value="2">2+ CÓPIAS</option>
+          <option value="5">5+ CÓPIAS</option>
+          <option value="10">10+ CÓPIAS</option>
+        </select>
+
+        <button onClick={() => fetchAdData(selectedNiche)} className="bg-red-600 p-2.5 rounded-lg hover:bg-red-700 transition-colors"><RefreshCw size={18} /></button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <AdCardSkeleton key={i} />) :
           filteredAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={favorites.includes(ad.id)} onToggleFavorite={(id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />)}
       </div>
