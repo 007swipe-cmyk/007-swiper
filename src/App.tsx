@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Smartphone, Sparkles, HelpCircle, HomeIcon, 
   ShieldCheck, MessageCircle, Search, Star, FileText, ExternalLink,
@@ -250,6 +250,35 @@ const App: React.FC = () => {
   const [offers, setOffers] = useState<any[]>([]);
 
   // Unused States and useEffect removed
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = carouselRef.current;
+    if (!container) return;
+    let isHovered = false;
+    const handleMouseEnter = () => { isHovered = true; };
+    const handleMouseLeave = () => { isHovered = false; };
+
+    container.addEventListener('mouseenter', handleMouseEnter);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    const interval = setInterval(() => {
+      if (!isHovered && container) {
+        // Se chegou ao final do scroll, reseta suavemente para o início
+        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+          container.scrollLeft = 0;
+        } else {
+          container.scrollLeft += 1;
+        }
+      }
+    }, 30);
+
+    return () => {
+      clearInterval(interval);
+      container.removeEventListener('mouseenter', handleMouseEnter);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [currentModule, currentPage, offers]);
 
   // Filtros e Sub-menus
   const [searchQuery, setSearchQuery] = useState('');
@@ -1190,7 +1219,7 @@ const App: React.FC = () => {
                         </h2>
                         
                         {/* Container com scroll interno travado */}
-                        <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 scrollbar-thin scrollbar-thumb-amber-500/20">
+                        <div ref={carouselRef} className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 no-scrollbar">
                             <div className="flex flex-nowrap gap-4 w-max">
                                 {displayOffers.map((offer) => {
                                     const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
