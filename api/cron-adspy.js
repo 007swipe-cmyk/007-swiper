@@ -95,55 +95,45 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < items.length; i++) {
       try {
-        const item = items[i];
-        if (!item) continue;
+        const raw = items[i] || {};
+        const snap = raw.snapshot || {};
+        const card = snap.cards?.[0] || {};
+        const videoObj = snap.videos?.[0] || {};
+        const imageObj = snap.images?.[0] || {};
 
         const videoUrl = 
-          item.videoUrl || 
-          item.video_url || 
-          item.snapshot?.videos?.[0]?.videoHdUrl || 
-          item.snapshot?.videos?.[0]?.videoSdUrl || 
-          item.snapshot?.cards?.[0]?.videoHdUrl || 
-          '';
-        const imageUrl =
-          item.imageUrl ||
-          item.image_url ||
-          item.snapshot?.images?.[0]?.originalImageUrl ||
-          item.snapshot?.images?.[0] ||
-          item.snapshot?.cards?.[0]?.original_image_url ||
-          item.snapshot?.cards?.[0]?.resized_image_url ||
-          '';
+          raw.videoUrl || raw.video_url || 
+          videoObj.videoHdUrl || videoObj.videoSdUrl || videoObj.video_hd_url || videoObj.video_sd_url ||
+          card.videoHdUrl || card.videoSdUrl || 
+          (Array.isArray(raw.videos) ? raw.videos[0] : '') || '';
 
-        const texto =
-          item.bodyText ||
-          item.adText ||
-          item.text ||
-          item.snapshot?.body?.text ||
-          item.snapshot?.cards?.[0]?.body ||
-          item.snapshot?.markup_card_doc?.body ||
-          '';
+        const imageUrl = 
+          raw.imageUrl || raw.image_url || 
+          (typeof imageObj === 'string' ? imageObj : imageObj.originalImageUrl || imageObj.resizedImageUrl) ||
+          card.original_image_url || card.resized_image_url || card.originalImageUrl ||
+          (Array.isArray(raw.images) ? raw.images[0] : '') || '';
 
-        const nomeAnunciante =
-          item.pageName ||
-          item.page_name ||
-          item.advertiserName ||
-          item.snapshot?.page_name ||
-          'Anunciante 007';
+        const texto = 
+          raw.bodyText || raw.adText || raw.text ||
+          (Array.isArray(raw.adCreativeBodies) ? raw.adCreativeBodies[0] : '') ||
+          (Array.isArray(raw.ad_creative_bodies) ? raw.ad_creative_bodies[0] : '') ||
+          snap.body?.text || card.body || snap.markup_card_doc?.body || '';
 
-        const paginaDestino =
-          item.pageUrl ||
-          item.page_url ||
-          item.destinationPage ||
-          item.snapshot?.linkUrl ||
-          item.snapshot?.cards?.[0]?.link_url ||
-          '';
+        const nomeAnunciante = 
+          raw.pageName || raw.page_name || raw.advertiserName || 
+          snap.page_name || raw.pageTitle || 'Anunciante 007';
+
+        const paginaDestino = 
+          raw.pageUrl || raw.page_url || raw.destinationPage || 
+          (Array.isArray(raw.adCreativeLinkUrls) ? raw.adCreativeLinkUrls[0] : '') ||
+          snap.linkUrl || card.link_url || card.linkUrl || '';
 
         let bunnyVideoUrl = '';
         if (videoUrl && libraryId && apiKey) {
           bunnyVideoUrl = await uploadToBunnyStream(videoUrl, libraryId, apiKey) || videoUrl;
         }
 
-        const adId = String(item.adArchiveId || item.id || `ad_${i}_${Date.now()}`);
+        const adId = String(raw.adArchiveId || raw.id || `ad_${i}_${Date.now()}`);
 
         const adDocument = {
           id: adId,
@@ -168,7 +158,8 @@ export default async function handler(req, res) {
       nicheExecuted: niche,
       adsFetched: items.length,
       adsSaved: savedDocs.length,
-      savedDocs
+      savedDocs,
+      rawSample: items[0] || null
     });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Erro interno de servidor' });
