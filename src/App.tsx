@@ -539,7 +539,7 @@ const App: React.FC = () => {
                             <div>
                                 <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-3 font-sans antialiased">
                                     <Briefcase className="text-[#D4AF37]" size={16} /> 
-                                    {currentPage === 'favoritos' ? 'FAVORITOS SALVOS' : 'OFERTAS VALIDADAS'}
+                                    {currentPage === 'favoritos' ? 'FAVORITOS SALVOS' : 'OFERTAS DE ELITE'}
                                 </h2>
                                 <p className="text-[10px] text-zinc-500 mt-1 uppercase font-semibold tracking-wider font-sans antialiased">Base de inteligência filtrada manualmente.</p>
                             </div>
@@ -1277,7 +1277,7 @@ const App: React.FC = () => {
                                     <Briefcase size={20} />
                                 </div>
                                 <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS VALIDADAS</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS DE ELITE</h4>
                                     <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Base de Inteligência</p>
                                     <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
                                         Acesse ofertas validadas, scripts e infraestrutura de vendas dos concorrentes.
@@ -1299,7 +1299,7 @@ const App: React.FC = () => {
                                     <Facebook size={20} />
                                 </div>
                                 <div className="mt-4 space-y-1.5">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">BIBLIOTECA FACEBOOK</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">AD SPY FACEBOOK</h4>
                                     <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Espionagem de Criativos</p>
                                     <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-1">
                                         Explore nossa biblioteca interna de anúncios para obter insights imediatos.
@@ -1465,15 +1465,15 @@ const App: React.FC = () => {
     <div className="flex min-h-screen bg-[#050505] text-white overflow-hidden font-sans antialiased">
 
       <header className="h-[65px] bg-[#0a0a0a] border-b border-white/5 fixed top-0 left-0 w-full z-50 flex items-center px-6 shadow-xl">
-        <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center space-x-3 shrink-0 border-r border-zinc-800 pr-6 mr-6">
           <div className="bg-[#D4AF37] p-1.5 rounded-md"><ShieldCheck className="text-black" size={20} /></div>
           <span className="text-lg font-black tracking-widest text-white uppercase italic">007 <span className="text-[#D4AF37]">SWIPER</span></span>
         </div>
-        <nav className="flex-1 flex items-center justify-start gap-2 md:gap-4 overflow-x-auto scrollbar-hide px-6">
+        <nav className="flex-1 min-w-0 md:flex-initial flex items-center justify-start gap-2 md:gap-4 overflow-x-auto scrollbar-hide px-6 ml-auto">
           {[
             { id: 'home', icon: HomeIcon, label: 'HOME', page: 'dashboard', module: 'home' },
-            { id: 'ofertas', icon: Briefcase, label: 'OFERTAS VALIDADAS', page: 'cofre', module: 'swiper' },
-            { id: 'biblioteca', icon: Facebook, label: 'BIBLIOTECA FACEBOOK', page: 'biblioteca', module: 'swiper' },
+            { id: 'ofertas', icon: Briefcase, label: 'OFERTAS DE ELITE', page: 'cofre', module: 'swiper' },
+            { id: 'biblioteca', icon: Facebook, label: 'AD SPY FACEBOOK', page: 'biblioteca', module: 'swiper' },
             // { id: 'interceptador', icon: Radar, label: 'RADAR DE GANCHOS', page: 'interceptador', module: 'swiper' },
             { id: 'extensao', icon: Puzzle, label: 'EXTENSÃO', page: 'extensao', module: 'swiper' },
             { id: 'favoritos', icon: Star, label: 'FAVORITOS', page: 'favoritos', module: 'swiper' },
