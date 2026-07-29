@@ -64,6 +64,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.BUNNY_API_KEY;
   
   const niche = req.query.niche || 'emagrecimento';
+  const lang = (req.query.lang || 'pt').toLowerCase();
+  const category = (req.query.category || niche).toLowerCase().replace(/\+/g, '_');
 
   if (!APIFY_TASK_ID || !API_TOKEN) {
     return res.status(500).json({ error: 'Configurações da Apify ausentes.' });
@@ -166,7 +168,9 @@ export default async function handler(req, res) {
           paginaDestino: paginaDestino,
           dataCaptura: new Date().toISOString(),
           dataInicio: dataInicio,
-          nicho: niche
+          nicho: niche,
+          idioma: lang,
+          categoria: category
         };
 
         const docRef = await addDoc(collection(db, 'facebook_ads'), adDocument);

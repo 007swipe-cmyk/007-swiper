@@ -27,8 +27,8 @@ const AdCardSkeleton: React.FC = () => (
 export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('TODOS');
-  const [selectedNiche, setSelectedNiche] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
+  const [selectedLang, setSelectedLang] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDaysFilter, setActiveDaysFilter] = useState('all');
   const [copiesFilter, setCopiesFilter] = useState('all');
@@ -69,7 +69,9 @@ export const AdLibrary: React.FC = () => {
           destinationPage: data.paginaDestino || '',
           videoThumbnail: data.imageUrl || data.thumbnailUrl || data.videoThumbnail || '',
           dataInicio: data.dataInicio || '',
-          dataCaptura: data.dataCaptura || ''
+          dataCaptura: data.dataCaptura || '',
+          categoria: data.categoria || data.nicho || 'Geral',
+          idioma: data.idioma || 'pt'
         });
       });
       setAds(list.reverse());
@@ -91,13 +93,52 @@ export const AdLibrary: React.FC = () => {
 
   useEffect(() => {
     setVisibleCount(12);
-  }, [selectedLanguage, selectedNiche, searchQuery, activeDaysFilter, copiesFilter]);
+  }, [selectedCategory, selectedLang, searchQuery, activeDaysFilter, copiesFilter]);
 
-  const availableNiches = useMemo(() => {
-    const filteredByLang = ads.filter(ad => selectedLanguage === 'TODOS' || detectLanguage(ad) === selectedLanguage);
-    const niches = filteredByLang.map(ad => ad.category).filter(Boolean);
-    return Array.from(new Set(niches));
-  }, [ads, selectedLanguage]);
+  const availableCategories = useMemo(() => {
+    const cats = ads.map(ad => ad.categoria || ad.category).filter(Boolean);
+    return Array.from(new Set(cats.map(c => c.toLowerCase())));
+  }, [ads]);
+
+  const getActiveTagLabel = (category: string, lang: string) => {
+    const cat = category.toLowerCase();
+    const lg = lang.toLowerCase();
+
+    if (cat === 'emagrecimento' || cat === 'weight_loss' || cat === 'perda_de_peso') {
+      if (lg === 'en') return 'weight loss';
+      if (lg === 'es') return 'pérdida de peso';
+      return 'emagrecimento';
+    }
+    if (cat === 'renda extra' || cat === 'renda_extra' || cat === 'make_money') {
+      if (lg === 'en') return 'make money';
+      if (lg === 'es') return 'ganar dinero';
+      return 'renda extra';
+    }
+    if (cat === 'truque' || cat === 'truques' || cat === 'hacks') {
+      if (lg === 'en') return 'secret hacks';
+      if (lg === 'es') return 'truco secreto';
+      return 'truques';
+    }
+    if (cat === 'apostas' || cat === 'betting' || cat === 'casino') {
+      if (lg === 'en') return 'betting / casino';
+      if (lg === 'es') return 'apuestas';
+      return 'apostas';
+    }
+
+    if (lg !== 'todos' && lg !== 'todas') {
+      return `${category} (${lang})`;
+    }
+    return category;
+  };
+
+  const formatCategoryLabel = (cat: string) => {
+    const c = cat.toLowerCase().replace(/_/g, ' ');
+    if (c === 'emagrecimento') return 'Emagrecimento';
+    if (c === 'renda extra') return 'Renda Extra';
+    if (c === 'truque' || c === 'truques') return 'Truques';
+    if (c === 'apostas') return 'Apostas';
+    return c.charAt(0).toUpperCase() + c.slice(1);
+  };
 
   const validAds = ads.filter((ad) => {
     const hasMedia = Boolean(ad.videoUrl || ad.videoThumbnail || (ad as any).imageUrl);
@@ -115,8 +156,11 @@ export const AdLibrary: React.FC = () => {
     const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesLanguage = selectedLanguage === 'TODOS' || detectLanguage(ad) === selectedLanguage;
-    const matchesNiche = !selectedNiche || ad.category.toLowerCase() === selectedNiche.toLowerCase();
+    const adLang = (ad.idioma || detectLanguage(ad)).toUpperCase();
+    const matchesLanguage = selectedLang === 'TODOS' || adLang === selectedLang;
+
+    const adCat = (ad.categoria || ad.category || 'Geral').toLowerCase();
+    const matchesCategory = selectedCategory === 'TODAS' || adCat === selectedCategory.toLowerCase();
 
     let matchesActiveDays = true;
     if (activeDaysFilter === '7') {
@@ -136,7 +180,7 @@ export const AdLibrary: React.FC = () => {
       matchesCopies = ad.copies >= 10;
     }
 
-    return matchesSearch && matchesLanguage && matchesNiche && matchesActiveDays && matchesCopies;
+    return matchesSearch && matchesLanguage && matchesCategory && matchesActiveDays && matchesCopies;
   });
 
   return (
@@ -155,24 +199,25 @@ export const AdLibrary: React.FC = () => {
           />
         </div>
         <select
-          value={selectedLanguage}
-          onChange={(e) => {
-            setSelectedLanguage(e.target.value);
-            setSelectedNiche(''); // Reseta o nicho ao mudar de idioma
-          }}
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
           className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider"
         >
-          <option value="TODOS">🌐 TODOS OS IDIOMAS</option>
-          <option value="PT">🇧🇷 PORTUGUÊS</option>
-          <option value="EN">🇺🇸 INGLÊS</option>
-          <option value="ES">🇪🇸 ESPANHOL</option>
+          <option value="TODAS">TODAS AS CATEGORIAS</option>
+          {availableCategories.map(cat => (
+            <option key={cat} value={cat}>{formatCategoryLabel(cat).toUpperCase()}</option>
+          ))}
         </select>
 
-        <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
-          <option value="">TODOS OS NICHOS</option>
-          {availableNiches.map(niche => (
-            <option key={niche} value={niche.toLowerCase()}>{niche.toUpperCase()}</option>
-          ))}
+        <select
+          value={selectedLang}
+          onChange={(e) => setSelectedLang(e.target.value)}
+          className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider"
+        >
+          <option value="TODOS">🌐 Todos os Idiomas</option>
+          <option value="PT">🇧🇷 Português</option>
+          <option value="EN">🇺🇸 Inglês</option>
+          <option value="ES">🇪🇸 Espanhol</option>
         </select>
 
         <select value={activeDaysFilter} onChange={(e) => setActiveDaysFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
@@ -191,6 +236,16 @@ export const AdLibrary: React.FC = () => {
 
         <button onClick={() => fetchAdData()} className="bg-red-600 p-2.5 rounded-lg hover:bg-red-700 transition-colors"><RefreshCw size={18} /></button>
       </div>
+
+      {/* Active Search Tag */}
+      {selectedCategory !== 'TODAS' && selectedLang !== 'TODOS' && (
+        <div className="flex items-center gap-2 mb-6 bg-zinc-900/60 border border-zinc-800/80 px-4 py-2 rounded-xl w-fit text-xs text-zinc-400">
+          <span>Busca ativa na Meta API:</span>
+          <span className="bg-amber-400/10 border border-amber-400/20 text-amber-400 font-black px-2.5 py-1 rounded uppercase tracking-widest text-[10px] animate-pulse">
+            "{getActiveTagLabel(selectedCategory, selectedLang)}"
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <AdCardSkeleton key={i} />) :

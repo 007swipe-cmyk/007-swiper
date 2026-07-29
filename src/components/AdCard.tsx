@@ -19,6 +19,8 @@ export interface Ad {
   videoThumbnail?: string;
   dataInicio?: string;
   dataCaptura?: string;
+  categoria?: string;
+  idioma?: string;
 }
 
 interface AdCardProps {
