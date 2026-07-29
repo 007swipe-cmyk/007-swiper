@@ -71,12 +71,15 @@ export default async function handler(req, res) {
 
   try {
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
+    const formattedUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}`;
     
     const apifyReq = await fetch(apifyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
+        startUrls: [{ url: formattedUrl }],
+        searchTerms: [niche],
+        countryCode: "BR",
         maxAds: 50,
         maxItems: 50,
         resultsLimit: 50,
@@ -96,6 +99,10 @@ export default async function handler(req, res) {
     for (let i = 0; i < items.length; i++) {
       try {
         const raw = items[i] || {};
+        if (!raw || raw.error || raw.errorDescription) {
+          console.warn("Item de erro retornado pela Apify ignorado:", raw?.errorDescription);
+          continue;
+        }
         const snap = raw.snapshot || {};
         const card = snap.cards?.[0] || {};
         const videoObj = snap.videos?.[0] || {};
