@@ -17,6 +17,8 @@ export interface Ad {
   fanPage?: string;
   destinationPage?: string;
   videoThumbnail?: string;
+  dataInicio?: string;
+  dataCaptura?: string;
 }
 
 interface AdCardProps {
@@ -34,6 +36,18 @@ export const AdCard: React.FC<AdCardProps> = ({ ad, isFavorite, onToggleFavorite
 
   // Capa Automática (Thumbnail Bunny)
   const posterUrl = imageUrl || (videoUrl.includes('b-cdn.net') ? videoUrl.replace(/play_\d+p\.mp4/, 'thumbnail.jpg') : '');
+
+  const calcularDiasRodando = (ad: Ad) => {
+    const dataInicioStr = ad.dataInicio || ad.dataCaptura;
+    if (!dataInicioStr) return 1;
+    
+    const inicio = new Date(dataInicioStr);
+    const hoje = new Date();
+    const diffEmMs = hoje.getTime() - inicio.getTime();
+    const dias = Math.floor(diffEmMs / (1000 * 60 * 60 * 24));
+    
+    return dias > 0 ? dias : 1;
+  };
 
   return (
     <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.4)] hover:border-red-500/30 transition-all duration-300 flex flex-col group h-fit relative">
@@ -82,7 +96,7 @@ export const AdCard: React.FC<AdCardProps> = ({ ad, isFavorite, onToggleFavorite
           </div>
           <div className="flex items-center text-red-400 font-bold bg-red-950/20 px-2 py-0.5 rounded border border-red-950/30">
             <Flame size={11} className="mr-1 animate-pulse" />
-            <span>Rodou por {ad.activeDays} {ad.activeDays === 1 ? 'dia' : 'dias'}</span>
+            <span>Rodou por {calcularDiasRodando(ad)} {calcularDiasRodando(ad) === 1 ? 'dia' : 'dias'}</span>
           </div>
         </div>
       </div>

@@ -53,7 +53,9 @@ export const AdLibrary: React.FC = () => {
           transcription: '',
           fanPage: data.nomeAnunciante || '',
           destinationPage: data.paginaDestino || '',
-          videoThumbnail: data.imageUrl || data.thumbnailUrl || data.videoThumbnail || ''
+          videoThumbnail: data.imageUrl || data.thumbnailUrl || data.videoThumbnail || '',
+          dataInicio: data.dataInicio || '',
+          dataCaptura: data.dataCaptura || ''
         });
       });
       setAds(list.reverse());

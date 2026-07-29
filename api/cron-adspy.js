@@ -143,6 +143,20 @@ export default async function handler(req, res) {
 
         const adId = String(raw.adArchiveId || raw.id || `ad_${i}_${Date.now()}`);
 
+        const dataInicioRaw = 
+          raw.ad_delivery_start_time || 
+          raw.adDeliveryStartTime || 
+          raw.startDate || 
+          snap.start_date || 
+          snap.creation_time || 
+          null;
+        let dataInicio = new Date().toISOString();
+        if (dataInicioRaw) {
+          // Converte timestamp de segundos (padrao Meta) ou string para ISO Date
+          const timestamp = typeof dataInicioRaw === 'number' ? dataInicioRaw * 1000 : dataInicioRaw;
+          dataInicio = new Date(timestamp).toISOString();
+        }
+
         const adDocument = {
           id: adId,
           videoUrl: bunnyVideoUrl,
@@ -151,6 +165,7 @@ export default async function handler(req, res) {
           nomeAnunciante: nomeAnunciante,
           paginaDestino: paginaDestino,
           dataCaptura: new Date().toISOString(),
+          dataInicio: dataInicio,
           nicho: niche
         };
 
