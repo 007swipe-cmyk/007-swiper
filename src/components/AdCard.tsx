@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Play, Volume2, VolumeX, ExternalLink, Calendar, Flame, Layers } from 'lucide-react';
+import { Star, ExternalLink, Calendar, Flame, Layers } from 'lucide-react';
 
 export interface Ad {
   id: string;
@@ -27,8 +27,13 @@ interface AdCardProps {
 
 export const AdCard: React.FC<AdCardProps> = ({ ad, isFavorite, onToggleFavorite }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+
+  // Normalização de Variáveis
+  const videoUrl = ad.videoUrl || (ad as any).video_url || '';
+  const imageUrl = ad.videoThumbnail || (ad as any).imageUrl || (ad as any).image_url || '';
+
+  // Capa Automática (Thumbnail Bunny)
+  const posterUrl = imageUrl || (videoUrl.includes('b-cdn.net') ? videoUrl.replace(/play_\d+p\.mp4/, 'thumbnail.jpg') : '');
 
   return (
     <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.4)] hover:border-red-500/30 transition-all duration-300 flex flex-col group h-fit relative">
@@ -137,68 +142,23 @@ export const AdCard: React.FC<AdCardProps> = ({ ad, isFavorite, onToggleFavorite
       </div>
 
       {/* Creative Media Simulator */}
-      <div className="relative aspect-[4/5] bg-black group-hover:shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] overflow-hidden">
-        {isPlaying ? (
-          <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-zinc-950">
-            {/* Visual simulation waves */}
-            <div className="flex items-center space-x-1.5 w-24 h-12 justify-center">
-              <div className="w-1.5 bg-red-500 animate-[bounce_0.8s_infinite] h-8"></div>
-              <div className="w-1.5 bg-red-500 animate-[bounce_0.8s_infinite_0.1s] h-12"></div>
-              <div className="w-1.5 bg-red-500 animate-[bounce_0.8s_infinite_0.2s] h-6"></div>
-              <div className="w-1.5 bg-red-500 animate-[bounce_0.8s_infinite_0.3s] h-10"></div>
-              <div className="w-1.5 bg-red-500 animate-[bounce_0.8s_infinite_0.4s] h-4"></div>
-            </div>
-            
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-black mt-3 animate-pulse">
-              Simulando Vídeo Criativo
-            </p>
-            
-            {/* Control Bar overlay */}
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between bg-black/60 backdrop-blur-md px-3 py-2 rounded-lg border border-white/5 text-zinc-300 text-[10px] uppercase font-bold tracking-wider">
-              <button 
-                onClick={() => setIsPlaying(false)} 
-                className="hover:text-red-500 transition-colors"
-              >
-                Pausar
-              </button>
-              <button 
-                onClick={() => setIsMuted(!isMuted)} 
-                className="hover:text-red-500 transition-colors flex items-center"
-              >
-                {isMuted ? <VolumeX size={12} className="mr-1" /> : <Volume2 size={12} className="mr-1" />}
-                {isMuted ? 'Mudo' : 'Som'}
-              </button>
-            </div>
-          </div>
+      <div className="relative aspect-[4/5] bg-black group-hover:shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] overflow-hidden flex items-center justify-center">
+        {videoUrl ? (
+          <video 
+            src={videoUrl} 
+            poster={posterUrl} 
+            controls 
+            preload="metadata" 
+            className="w-full h-full object-cover rounded-lg"
+          />
+        ) : imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt="Ad Creative" 
+            className="w-full h-full object-cover rounded-lg"
+          />
         ) : (
-          <div 
-            onClick={() => setIsPlaying(true)}
-            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center cursor-pointer group/media bg-gradient-to-b from-zinc-900/30 to-black/80"
-          >
-            {/* Thumbnail simulator pattern / actual thumbnail image */}
-            {ad.videoThumbnail ? (
-              <img 
-                src={ad.videoThumbnail} 
-                alt="Ad Creative Thumbnail" 
-                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/media:opacity-80 transition-opacity duration-300"
-              />
-            ) : (
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:16px_16px]"></div>
-            )}
-            
-            {/* Play Button Glow Container */}
-            <div className="relative z-10 w-16 h-16 rounded-full bg-zinc-950/80 border border-zinc-800 flex items-center justify-center group-hover/media:border-red-500 group-hover/media:scale-110 shadow-2xl transition-all duration-300">
-              <Play size={20} className="text-zinc-400 group-hover/media:text-red-500 fill-zinc-400/10 group-hover/media:fill-red-500/20 translate-x-0.5 transition-colors" />
-              <div className="absolute inset-0 rounded-full border border-red-500/0 group-hover/media:border-red-500/30 group-hover/media:animate-ping opacity-75"></div>
-            </div>
-            
-            <span className="relative z-10 text-[9px] text-zinc-400 font-black uppercase tracking-widest mt-4 group-hover/media:text-white transition-colors">
-              Reproduzir Criativo
-            </span>
-            <span className="relative z-10 text-[8px] text-zinc-600 uppercase tracking-widest mt-1">
-              {ad.category}
-            </span>
-          </div>
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:16px_16px] w-full h-full"></div>
         )}
       </div>
 
