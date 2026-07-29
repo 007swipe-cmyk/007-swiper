@@ -71,7 +71,7 @@ export default async function handler(req, res) {
 
   try {
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
-    const formattedUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}`;
+    const formattedUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(niche)}&search_type=keyword_unordered`;
     
     const apifyReq = await fetch(apifyUrl, {
       method: 'POST',
@@ -79,11 +79,12 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         startUrls: [{ url: formattedUrl }],
         searchTerms: [niche],
-        countryCode: "BR",
+        searchType: "keyword_unordered",
+        countryCode: "ALL",
         maxAds: 50,
         maxItems: 50,
         resultsLimit: 50,
-        proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+        proxyConfiguration: { useApifyProxy: true }
       })
     });
 
