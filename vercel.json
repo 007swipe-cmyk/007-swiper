@@ -1,12 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron-organic",
-      "schedule": "0 0 * * *"
+      "path": "/api/cron-adspy?niche=emagrecimento",
+      "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron-adspy",
-      "schedule": "0 0 * * *"
+      "path": "/api/cron-adspy?niche=renda+extra",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron-adspy?niche=truque",
+      "schedule": "0 6 * * *"
     }
   ]
 }
