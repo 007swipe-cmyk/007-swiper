@@ -178,7 +178,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         startUrls: [{ url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&q=${encodeURIComponent(niche)}&media_type=all` }],
-        maxResult: 40,
+        maxResult: 100,
         proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
       })
     });
@@ -250,6 +250,7 @@ export default async function handler(req, res) {
       nicheExecuted: niche,
       adsFetched: items.length,
       adsProcessed: savedDocs.length,
+      adsProcessedWithVideo: savedDocs.length,
       deletedOldAdsCount: deletedCount,
       savedDocs
     });
