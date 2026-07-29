@@ -1150,34 +1150,19 @@ const App: React.FC = () => {
     // Deleted routes
 
     if (currentModule === 'home' || currentPage === 'dashboard') {
-        const baseOffers = offers.length > 0 ? offers.slice(0, 10) : [
+        const displayOffers = offers.length > 0 ? offers : [
             { id: '1', title: 'PROTOCOLO ZERO BARRIGA', niche: 'Saúde', coverImage: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=300', trend: 'ROI: 400%' },
             { id: '2', title: 'VELAS AROMÁTICAS LUCRATIVAS', niche: 'Hobbies', coverImage: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=300', trend: 'ROI: 350%' },
             { id: '3', title: 'CÓDIGO DA RIQUEZA', niche: 'Finanças', coverImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=300', trend: 'ROI: 520%' },
-            { id: '4', title: 'MANUAL DA CONQUISTA', niche: 'Relacionamento', coverImage: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300', trend: 'ROI: 310%' },
-            { id: '5', title: 'DESPERTAR HORMONAL', niche: 'Saúde', coverImage: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=300', trend: 'ROI: 450%' },
-            { id: '6', title: 'CERVEJA ARTESANAL', niche: 'Gastronomia', coverImage: 'https://images.unsplash.com/photo-1532634922-8fe0b757fb13?q=80&w=300', trend: 'ROI: 380%' }
+            { id: '4', title: 'MANUAL DA CONQUISTA', niche: 'Relacionamento', coverImage: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300', trend: 'ROI: 310%' }
         ];
 
-        let displayOffers = [...baseOffers];
-        while (displayOffers.length < 8) {
-            displayOffers = [...displayOffers, ...baseOffers];
-        }
-
         return (
-            <div className="animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden min-h-screen bg-[#050505] text-white px-4 md:px-8 py-6 font-sans antialiased pb-20">
+            <div className="animate-in fade-in duration-500 w-full max-w-full min-h-screen bg-[#050505] text-white overflow-x-hidden flex flex-col items-center font-sans antialiased pb-20">
                 <style dangerouslySetInnerHTML={{ __html: `
                   @keyframes marquee-scroll {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
-                  }
-                  .animate-marquee-infinite {
-                    display: flex;
-                    width: max-content;
-                    animation: marquee-scroll 35s linear infinite;
-                  }
-                  .animate-marquee-infinite:hover {
-                    animation-play-state: paused;
                   }
                   .mask-marquee-glow {
                     mask-image: linear-gradient(to right, transparent, white 8%, white 92%, transparent);
@@ -1186,7 +1171,7 @@ const App: React.FC = () => {
                 ` }} />
 
                 {/* Header/Persuasive Copy */}
-                <div className="text-center space-y-3 py-4 border-b border-white/5 mb-8 md:mb-12">
+                <div className="text-center space-y-3 py-4 border-b border-white/5 mb-8 md:mb-12 w-full max-w-5xl">
                     <h1 className="text-xl md:text-3xl font-black tracking-wider text-white">
                         O ECOSSISTEMA DEFINITIVO PARA <span className="text-[#D4AF37]">DOMINAR O MERCADO</span>.
                     </h1>
@@ -1195,205 +1180,207 @@ const App: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="w-full space-y-8">
+                <div className="w-full max-w-5xl flex flex-col gap-8">
                     
-                    {/* Dynamic Marquee Section */}
-                    <div className="space-y-4">
-                        <h3 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse"></span>
-                            🔥 RADAR DE OFERTAS (EM ALTA)
-                        </h3>
+                    {/* Container do Carrossel de Ofertas (Topo) */}
+                    <div className="w-full max-w-full min-w-0 px-4 md:px-8 my-6">
+                        <h2 className="text-sm font-bold tracking-wider text-[#D4AF37] uppercase mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse"></span>
+                            Radar de Ofertas (Em Alta)
+                        </h2>
                         
-                        <div className="relative w-full overflow-hidden py-1 mask-marquee-glow rounded-xl border border-white/5 bg-[#070707] p-2">
-                            <div className="w-full overflow-x-auto scrollbar-hide no-scrollbar py-2 my-4">
-                                <div className="flex gap-4 w-max animate-marquee-infinite">
-                                    {displayOffers.concat(displayOffers).map((offer, idx) => {
-                                        const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
-                                        const isFav = favorites.includes(offer.id);
-                                        return (
-                                            <div 
-                                                key={idx} 
-                                                onClick={() => {
-                                                    setSelectedOffer(offer);
-                                                    setCurrentModule('swiper');
-                                                    setCurrentPage('cofre');
-                                                }}
-                                                className="flex-shrink-0 w-72 bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden group hover:border-[#D4AF37]/35 hover:scale-[1.02] transition-all duration-300 relative cursor-pointer"
-                                            >
-                                                <div className="h-40 overflow-hidden relative bg-black">
-                                                    <img 
-                                                        src={imgUrl} 
-                                                        alt={offer.title} 
-                                                        className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
-                                                    />
-                                                    
-                                                    {/* Trend Badge */}
-                                                    <span className="absolute top-2 left-2 bg-black/80 border border-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
-                                                        {offer.trend || 'ALTA CONVERSÃO'}
-                                                    </span>
-    
-                                                    {/* Favorite Toggle Button */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleFavoriteToggle(offer.id);
-                                                        }}
-                                                        className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 border border-white/10 hover:border-[#D4AF37]/50 text-zinc-400 hover:text-[#D4AF37] transition-all"
-                                                    >
-                                                        <Star size={14} className={isFav ? "fill-[#D4AF37] text-[#D4AF37]" : ""} />
-                                                    </button>
-                                                </div>
-                                                <div className="p-3 space-y-1">
-                                                    <h4 className="text-xs md:text-sm font-bold text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#D4AF37] transition-all">
-                                                        {offer.title}
-                                                    </h4>
-                                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                                                        {offer.niche || 'Geral'}
-                                                    </p>
-                                                </div>
+                        {/* Container com scroll interno travado */}
+                        <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 scrollbar-thin scrollbar-thumb-amber-500/20">
+                            <div className="flex flex-nowrap gap-4 w-max">
+                                {displayOffers.map((offer) => {
+                                    const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
+                                    const isFav = favorites.includes(offer.id);
+                                    return (
+                                        <div 
+                                            key={offer.id} 
+                                            onClick={() => {
+                                                setSelectedOffer(offer);
+                                                setCurrentModule('swiper');
+                                                setCurrentPage('cofre');
+                                            }}
+                                            className="flex-shrink-0 w-72 bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden group hover:border-[#D4AF37]/35 hover:scale-[1.02] transition-all duration-300 relative cursor-pointer"
+                                        >
+                                            <div className="h-40 overflow-hidden relative bg-black">
+                                                <img 
+                                                    src={imgUrl} 
+                                                    alt={offer.title} 
+                                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
+                                                />
+                                                
+                                                {/* Trend Badge */}
+                                                <span className="absolute top-2 left-2 bg-black/80 border border-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                                                    {offer.trend || 'ALTA CONVERSÃO'}
+                                                </span>
+                
+                                                {/* Favorite Toggle Button */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleFavoriteToggle(offer.id);
+                                                    }}
+                                                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 border border-white/10 hover:border-[#D4AF37]/50 text-zinc-400 hover:text-[#D4AF37] transition-all"
+                                                >
+                                                    <Star size={14} className={isFav ? "fill-[#D4AF37] text-[#D4AF37]" : ""} />
+                                                </button>
                                             </div>
-                                        );
-                                    })}
-                                </div>
+                                            <div className="p-3 space-y-1">
+                                                <h4 className="text-xs md:text-sm font-bold text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#D4AF37] transition-all">
+                                                    {offer.title}
+                                                </h4>
+                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                                                    {offer.niche || 'Geral'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
 
-                    {/* Painel de Status da Plataforma */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-4">
-                        {[
-                            { label: 'Criativos Mapeados', value: '+5.000', detail: 'Atualizado em tempo real' },
-                            { label: 'Ofertas de Elite', value: 'Validadas', detail: 'Curadoria manual avançada' },
-                            { label: 'Status do Robô', value: 'Ativo & Operacional', detail: 'Sincronização contínua' }
-                        ].map((stat, i) => (
-                            <div 
-                                key={i} 
-                                className="bg-[#0a0a0a]/80 backdrop-blur-md border border-amber-500/20 p-5 rounded-2xl flex flex-col justify-between hover:scale-[1.03] transition-all duration-300 relative overflow-hidden shadow-lg group hover:border-[#D4AF37]/40"
-                            >
-                                <div className="absolute top-0 right-0 w-12 h-12 bg-[#D4AF37]/1 rounded-bl-full pointer-events-none"></div>
-                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{stat.label}</span>
-                                <div className="mt-2 flex items-baseline gap-2">
-                                    <span className="text-xl font-black text-white uppercase tracking-tight group-hover:text-[#D4AF37] transition-all">
-                                        {stat.value}
-                                    </span>
+                    {/* Container das Ferramentas Exclusivas e Métricas */}
+                    <div className="w-full max-w-5xl min-w-0 px-4 md:px-8 mx-auto my-8 flex flex-col gap-8">
+                        {/* Painel de Status da Plataforma */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-4 w-full">
+                            {[
+                                { label: 'Criativos Mapeados', value: '+5.000', detail: 'Atualizado em tempo real' },
+                                { label: 'Ofertas de Elite', value: 'Validadas', detail: 'Curadoria manual avançada' },
+                                { label: 'Status do Robô', value: 'Ativo & Operacional', detail: 'Sincronização contínua' }
+                            ].map((stat, i) => (
+                                <div 
+                                    key={i} 
+                                    className="bg-[#0a0a0a]/80 backdrop-blur-md border border-amber-500/20 p-5 rounded-2xl flex flex-col justify-between hover:scale-[1.03] transition-all duration-300 relative overflow-hidden shadow-lg group hover:border-[#D4AF37]/40"
+                                >
+                                    <div className="absolute top-0 right-0 w-12 h-12 bg-[#D4AF37]/1 rounded-bl-full pointer-events-none"></div>
+                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{stat.label}</span>
+                                    <div className="mt-2 flex items-baseline gap-2">
+                                        <span className="text-xl font-black text-white uppercase tracking-tight group-hover:text-[#D4AF37] transition-all">
+                                            {stat.value}
+                                        </span>
+                                    </div>
+                                    <span className="text-[9px] text-zinc-600 font-medium uppercase mt-1 tracking-wide">{stat.detail}</span>
                                 </div>
-                                <span className="text-[9px] text-zinc-600 font-medium uppercase mt-1 tracking-wide">{stat.detail}</span>
+                            ))}
+                        </div>
+
+                        {/* Bloco de Ferramentas Exclusivas em Grid 2x2 */}
+                        <div className="w-full">
+                            <h2 className="text-sm font-bold tracking-wider text-gray-400 uppercase mb-4">Ferramentas Exclusivas</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                
+                                {/* OFERTAS VALIDADAS */}
+                                <button 
+                                    onClick={() => {
+                                        setCurrentModule('swiper');
+                                        setCurrentPage('cofre');
+                                        setSelectedOffer(null);
+                                    }}
+                                    className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
+                                    <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
+                                        <Briefcase size={20} />
+                                    </div>
+                                    <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS DE ELITE</h4>
+                                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Base de Inteligência</p>
+                                            <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                                Acesse VSLs, scripts e estrutura de vendas validadas dos concorrentes.
+                                            </p>
+                                        </div>
+                                        <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                            Acessar Biblioteca
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* BIBLIOTECA FACEBOOK */}
+                                <button 
+                                    onClick={() => {
+                                        setCurrentModule('swiper');
+                                        setCurrentPage('biblioteca');
+                                        setSelectedOffer(null);
+                                    }}
+                                    className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
+                                    <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
+                                        <Facebook size={20} />
+                                    </div>
+                                    <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">AD SPY FACEBOOK</h4>
+                                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Espionagem de Criativos</p>
+                                            <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                                Explore e filtre nossa biblioteca interna de anúncios para minerar criativos e copies.
+                                            </p>
+                                        </div>
+                                        <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                            Iniciar Espionagem
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* EXTENSÃO 007 */}
+                                <button 
+                                    onClick={() => {
+                                        setCurrentModule('swiper');
+                                        setCurrentPage('extensao');
+                                        setSelectedOffer(null);
+                                    }}
+                                    className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
+                                    <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
+                                        <Puzzle size={20} />
+                                    </div>
+                                    <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">EXTENSÃO 007</h4>
+                                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Central de Captura</p>
+                                            <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                                Instale nossa extensão exclusiva para capturar anúncios e fazer downloads com 1 clique.
+                                            </p>
+                                        </div>
+                                        <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                            Baixar Extensão
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* CENTRAL 007 / SUPORTE */}
+                                <button 
+                                    onClick={() => {
+                                        setCurrentModule('central');
+                                        setCurrentPage('suporte');
+                                    }}
+                                    className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
+                                    <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
+                                        <HelpCircle size={20} />
+                                    </div>
+                                    <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">CENTRAL 007</h4>
+                                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Suporte e Comunidade</p>
+                                            <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
+                                                Suporte direto, tutoriais de uso e comunidade privada de membros.
+                                            </p>
+                                        </div>
+                                        <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
+                                            Acessar Central
+                                        </div>
+                                    </div>
+                                </button>
+
                             </div>
-                        ))}
-                    </div>
-
-                    {/* Container Central das Ferramentas */}
-                    <div className="w-full max-w-5xl mx-auto my-10">
-                        <h2 className="text-sm font-bold tracking-wider text-gray-400 uppercase mb-4">Ferramentas Exclusivas</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            {/* OFERTAS VALIDADAS */}
-                            <button 
-                                onClick={() => {
-                                    setCurrentModule('swiper');
-                                    setCurrentPage('cofre');
-                                    setSelectedOffer(null);
-                                }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
-                                <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <Briefcase size={20} />
-                                </div>
-                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">OFERTAS DE ELITE</h4>
-                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Base de Inteligência</p>
-                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
-                                            Acesse VSLs, scripts e estrutura de vendas validadas dos concorrentes.
-                                        </p>
-                                    </div>
-                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
-                                        Acessar Biblioteca
-                                    </div>
-                                </div>
-                            </button>
-
-                            {/* BIBLIOTECA FACEBOOK */}
-                            <button 
-                                onClick={() => {
-                                    setCurrentModule('swiper');
-                                    setCurrentPage('biblioteca');
-                                    setSelectedOffer(null);
-                                }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
-                                <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <Facebook size={20} />
-                                </div>
-                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">AD SPY FACEBOOK</h4>
-                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Espionagem de Criativos</p>
-                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
-                                            Explore e filtre nossa biblioteca interna de anúncios para minerar criativos e copies.
-                                        </p>
-                                    </div>
-                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
-                                        Iniciar Espionagem
-                                    </div>
-                                </div>
-                            </button>
-
-                            {/* EXTENSÃO 007 */}
-                            <button 
-                                onClick={() => {
-                                    setCurrentModule('swiper');
-                                    setCurrentPage('extensao');
-                                    setSelectedOffer(null);
-                                }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
-                                <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <Puzzle size={20} />
-                                </div>
-                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">EXTENSÃO 007</h4>
-                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Central de Captura</p>
-                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
-                                            Instale nossa extensão exclusiva para capturar anúncios e fazer downloads com 1 clique.
-                                        </p>
-                                    </div>
-                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
-                                        Baixar Extensão
-                                    </div>
-                                </div>
-                            </button>
-
-                            {/* CENTRAL 007 / SUPORTE */}
-                            <button 
-                                onClick={() => {
-                                    setCurrentModule('central');
-                                    setCurrentPage('suporte');
-                                }}
-                                className="bg-[#0a0a0a] border border-white/5 p-6 rounded-2xl text-left flex flex-col justify-between min-h-[220px] relative overflow-hidden group hover:border-[#D4AF37]/40 hover:bg-[#0c0c0c] transition-all duration-300 shadow-xl cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/2 rounded-bl-full pointer-events-none"></div>
-                                <div className="p-3 bg-[#121212] rounded-xl border border-white/5 text-[#D4AF37] w-fit">
-                                    <HelpCircle size={20} />
-                                </div>
-                                <div className="mt-4 space-y-1.5 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-wider group-hover:text-[#D4AF37] transition-all">CENTRAL 007</h4>
-                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Suporte e Comunidade</p>
-                                        <p className="text-[11px] text-zinc-400 leading-normal font-normal pt-2">
-                                            Suporte direto, tutoriais de uso e comunidade privada de membros.
-                                        </p>
-                                    </div>
-                                    <div className="mt-6 w-full bg-[#121212] group-hover:bg-[#D4AF37] group-hover:text-black text-[#D4AF37] border border-[#D4AF37]/10 group-hover:border-transparent text-[9px] font-black uppercase tracking-widest py-2.5 rounded text-center transition-all duration-300">
-                                        Acessar Central
-                                    </div>
-                                </div>
-                            </button>
-
                         </div>
                     </div>
 
