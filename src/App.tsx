@@ -262,16 +262,17 @@ const App: React.FC = () => {
     container.addEventListener('mouseenter', handleMouseEnter);
     container.addEventListener('mouseleave', handleMouseLeave);
 
+
     const interval = setInterval(() => {
       if (!isHovered && container) {
         // Se chegou ao final do scroll, reseta suavemente para o início
         if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
           container.scrollLeft = 0;
         } else {
-          container.scrollLeft += 1;
+          container.scrollLeft += 2; // Aumentado para dobrar a velocidade
         }
       }
-    }, 30);
+    }, 20);
 
     return () => {
       clearInterval(interval);
@@ -1219,7 +1220,7 @@ const App: React.FC = () => {
                         </h2>
                         
                         {/* Container com scroll interno travado */}
-                        <div ref={carouselRef} className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 no-scrollbar">
+                        <div ref={carouselRef} className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <div className="flex flex-nowrap gap-4 w-max">
                                 {displayOffers.map((offer) => {
                                     const imgUrl = getDriveDirectLink(offer.coverImage) || offer.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300';
