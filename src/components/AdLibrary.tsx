@@ -1,8 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, RefreshCw } from 'lucide-react';
 import { AdCard, Ad } from './AdCard';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+const detectLanguage = (ad: Ad) => {
+  if ((ad as any).idioma) return (ad as any).idioma.toUpperCase();
+  const text = `${ad.category} ${ad.bodyText}`.toLowerCase();
+  
+  // Detecção por palavras-chave e nichos comuns
+  if (/weight|loss|dating|crypto|make money|health|skin/i.test(ad.category) || /\b(the|and|you|this|your|for|with)\b/i.test(text)) {
+    return 'EN';
+  }
+  if (/\b(el|la|los|que|por|para|con|este|esta)\b/i.test(text)) {
+    return 'ES';
+  }
+  return 'PT';
+};
 
 const AdCardSkeleton: React.FC = () => (
   <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden shadow-lg flex flex-col h-fit animate-pulse p-4">
@@ -13,6 +27,7 @@ const AdCardSkeleton: React.FC = () => (
 export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('TODOS');
   const [selectedNiche, setSelectedNiche] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDaysFilter, setActiveDaysFilter] = useState('all');
@@ -23,12 +38,11 @@ export const AdLibrary: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const fetchAdData = async (niche: string) => {
+  const fetchAdData = async () => {
     setIsLoading(true);
     try {
       const adsRef = collection(db, 'facebook_ads');
-      const q = niche ? query(adsRef, where('nicho', '==', niche)) : adsRef;
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(adsRef);
 
       const list: Ad[] = [];
       querySnapshot.forEach((docSnap) => {
@@ -68,8 +82,8 @@ export const AdLibrary: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAdData(selectedNiche);
-  }, [selectedNiche]);
+    fetchAdData();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('swiper_library_favorites', JSON.stringify(favorites));
@@ -77,7 +91,13 @@ export const AdLibrary: React.FC = () => {
 
   useEffect(() => {
     setVisibleCount(12);
-  }, [selectedNiche, searchQuery, activeDaysFilter, copiesFilter]);
+  }, [selectedLanguage, selectedNiche, searchQuery, activeDaysFilter, copiesFilter]);
+
+  const availableNiches = useMemo(() => {
+    const filteredByLang = ads.filter(ad => selectedLanguage === 'TODOS' || detectLanguage(ad) === selectedLanguage);
+    const niches = filteredByLang.map(ad => ad.category).filter(Boolean);
+    return Array.from(new Set(niches));
+  }, [ads, selectedLanguage]);
 
   const validAds = ads.filter((ad) => {
     const hasMedia = Boolean(ad.videoUrl || ad.videoThumbnail || (ad as any).imageUrl);
@@ -94,6 +114,9 @@ export const AdLibrary: React.FC = () => {
   const filteredAds = validAds.filter(ad => {
     const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesLanguage = selectedLanguage === 'TODOS' || detectLanguage(ad) === selectedLanguage;
+    const matchesNiche = !selectedNiche || ad.category.toLowerCase() === selectedNiche.toLowerCase();
 
     let matchesActiveDays = true;
     if (activeDaysFilter === '7') {
@@ -113,7 +136,7 @@ export const AdLibrary: React.FC = () => {
       matchesCopies = ad.copies >= 10;
     }
 
-    return matchesSearch && matchesActiveDays && matchesCopies;
+    return matchesSearch && matchesLanguage && matchesNiche && matchesActiveDays && matchesCopies;
   });
 
   return (
@@ -131,11 +154,25 @@ export const AdLibrary: React.FC = () => {
             className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 pl-10"
           />
         </div>
+        <select
+          value={selectedLanguage}
+          onChange={(e) => {
+            setSelectedLanguage(e.target.value);
+            setSelectedNiche(''); // Reseta o nicho ao mudar de idioma
+          }}
+          className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider"
+        >
+          <option value="TODOS">🌐 TODOS OS IDIOMAS</option>
+          <option value="PT">🇧🇷 PORTUGUÊS</option>
+          <option value="EN">🇺🇸 INGLÊS</option>
+          <option value="ES">🇪🇸 ESPANHOL</option>
+        </select>
+
         <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
           <option value="">TODOS OS NICHOS</option>
-          <option value="truque">TRUQUE</option>
-          <option value="emagrecimento">EMAGRECIMENTO</option>
-          <option value="renda extra">RENDA EXTRA</option>
+          {availableNiches.map(niche => (
+            <option key={niche} value={niche.toLowerCase()}>{niche.toUpperCase()}</option>
+          ))}
         </select>
 
         <select value={activeDaysFilter} onChange={(e) => setActiveDaysFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
@@ -152,7 +189,7 @@ export const AdLibrary: React.FC = () => {
           <option value="10">10+ CÓPIAS</option>
         </select>
 
-        <button onClick={() => fetchAdData(selectedNiche)} className="bg-red-600 p-2.5 rounded-lg hover:bg-red-700 transition-colors"><RefreshCw size={18} /></button>
+        <button onClick={() => fetchAdData()} className="bg-red-600 p-2.5 rounded-lg hover:bg-red-700 transition-colors"><RefreshCw size={18} /></button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
