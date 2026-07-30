@@ -47,7 +47,7 @@ export const getNormalizedCategory = (ad: any) => {
   if (/aposta|apostas|bet|igaming/i.test(cat)) return 'APOSTAS';
   if (/amor|relacionamento|dating/i.test(cat)) return 'RELACIONAMENTO';
   
-  return cat ? cat.toUpperCase() : 'GERAL';
+  return null;
 };
 
 export const AdLibrary: React.FC = () => {
@@ -122,7 +122,9 @@ export const AdLibrary: React.FC = () => {
   }, [selectedCategory, selectedLang, searchQuery, selectedPeriod, copiesFilter]);
 
   const availableCategories = useMemo(() => {
-    const cats = ads.map(ad => getNormalizedCategory(ad)).filter(Boolean);
+    const cats = ads
+      .map(ad => getNormalizedCategory(ad))
+      .filter((cat): cat is any => Boolean(cat) && (cat as any) !== 'GERAL') as string[];
     return Array.from(new Set(cats)).sort();
   }, [ads]);
 

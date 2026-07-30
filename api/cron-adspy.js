@@ -54,6 +54,14 @@ async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
 }
 
 export default async function handler(req, res) {
+  // Configuração de cabeçalhos CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     if (req.method !== 'GET' && req.method !== 'POST') {
       return res.status(405).json({ message: 'Method Not Allowed' });
