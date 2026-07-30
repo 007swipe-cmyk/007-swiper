@@ -24,13 +24,27 @@ const AdCardSkeleton: React.FC = () => (
   </div>
 );
 
+export const getDaysRunning = (ad: any) => {
+  const rawDate = ad.dataInicio || ad.dataCaptura || ad.startDate;
+  if (!rawDate) return 1;
+  
+  const startDate = new Date(rawDate);
+  if (isNaN(startDate.getTime())) return 1;
+  
+  const now = new Date();
+  const diffTime = now.getTime() - startDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays >= 1 ? diffDays : 1;
+};
+
 export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
   const [selectedLang, setSelectedLang] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDaysFilter, setActiveDaysFilter] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('TODOS');
   const [copiesFilter, setCopiesFilter] = useState('all');
   const [visibleCount, setVisibleCount] = useState(12);
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -93,7 +107,7 @@ export const AdLibrary: React.FC = () => {
 
   useEffect(() => {
     setVisibleCount(12);
-  }, [selectedCategory, selectedLang, searchQuery, activeDaysFilter, copiesFilter]);
+  }, [selectedCategory, selectedLang, searchQuery, selectedPeriod, copiesFilter]);
 
   const availableCategories = useMemo(() => {
     const cats = ads.map(ad => ad.categoria || ad.category).filter(Boolean);
@@ -162,14 +176,12 @@ export const AdLibrary: React.FC = () => {
     const adCat = (ad.categoria || ad.category || 'Geral').toLowerCase();
     const matchesCategory = selectedCategory === 'TODAS' || adCat === selectedCategory.toLowerCase();
 
-    let matchesActiveDays = true;
-    if (activeDaysFilter === '7') {
-      matchesActiveDays = ad.activeDays >= 7;
-    } else if (activeDaysFilter === '15') {
-      matchesActiveDays = ad.activeDays >= 15;
-    } else if (activeDaysFilter === '30') {
-      matchesActiveDays = ad.activeDays >= 30;
-    }
+    const matchesPeriod = () => {
+      if (selectedPeriod === 'TODOS') return true;
+      const minDays = parseInt(selectedPeriod, 10);
+      const daysRunning = getDaysRunning(ad);
+      return daysRunning >= minDays;
+    };
 
     let matchesCopies = true;
     if (copiesFilter === '2') {
@@ -180,12 +192,12 @@ export const AdLibrary: React.FC = () => {
       matchesCopies = ad.copies >= 10;
     }
 
-    return matchesSearch && matchesLanguage && matchesCategory && matchesActiveDays && matchesCopies;
+    return matchesSearch && matchesLanguage && matchesCategory && matchesPeriod() && matchesCopies;
   });
 
   return (
     <div className="w-full h-full flex flex-col p-6 bg-[#050505] text-white">
-      <h1 className="text-lg font-black uppercase mb-6">Biblioteca Interna</h1>
+      <h1 className="text-lg font-black uppercase mb-6">ADS SPY FACEBOOK</h1>
 
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1">
@@ -220,11 +232,12 @@ export const AdLibrary: React.FC = () => {
           <option value="ES">🇪🇸 Espanhol</option>
         </select>
 
-        <select value={activeDaysFilter} onChange={(e) => setActiveDaysFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
-          <option value="all">TODOS OS PERÍODOS</option>
-          <option value="7">ATIVO HÁ +7 DIAS</option>
-          <option value="15">ATIVO HÁ +15 DIAS</option>
-          <option value="30">ATIVO HÁ +30 DIAS</option>
+        <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
+          <option value="TODOS">Todos os Períodos</option>
+          <option value="3">Ativo há +3 dias</option>
+          <option value="7">Ativo há +7 dias</option>
+          <option value="15">Ativo há +15 dias</option>
+          <option value="30">Ativo há +30 dias</option>
         </select>
 
         <select value={copiesFilter} onChange={(e) => setCopiesFilter(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
