@@ -4,17 +4,14 @@ import { AdCard, Ad } from './AdCard';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-const detectLanguage = (ad: Ad) => {
-  if ((ad as any).idioma) return (ad as any).idioma.toUpperCase();
-  const text = `${ad.category} ${ad.bodyText}`.toLowerCase();
+const getAdLanguage = (ad: any) => {
+  if (ad.idioma) return ad.idioma.toUpperCase();
+  const text = `${ad.category || ad.nicho} ${ad.bodyText || ad.texto}`.toLowerCase();
   
-  // Detecção por palavras-chave e nichos comuns
-  if (/weight|loss|dating|crypto|make money|health|skin/i.test(ad.category) || /\b(the|and|you|this|your|for|with)\b/i.test(text)) {
-    return 'EN';
-  }
-  if (/\b(el|la|los|que|por|para|con|este|esta)\b/i.test(text)) {
-    return 'ES';
-  }
+  if (/perte|poids|gagner|argent|astuce|rencontre|vos/i.test(text)) return 'FR';
+  if (/weight|loss|dating|crypto|make|money/i.test(text)) return 'EN';
+  if (/perder|peso|ganar|dinero|truco|apuestas/i.test(text)) return 'ES';
+  
   return 'PT';
 };
 
@@ -189,8 +186,7 @@ export const AdLibrary: React.FC = () => {
     const matchesSearch = ad.bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           ad.advertiserName.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const adLang = (ad.idioma || detectLanguage(ad)).toUpperCase();
-    const matchesLanguage = selectedLang === 'TODOS' || adLang === selectedLang;
+    const matchesLanguage = selectedLang === 'TODOS' || getAdLanguage(ad) === selectedLang;
 
     const matchesCategory = selectedCategory === 'TODAS' || getNormalizedCategory(ad) === selectedCategory;
 
@@ -245,9 +241,10 @@ export const AdLibrary: React.FC = () => {
           className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider"
         >
           <option value="TODOS">🌐 Todos os Idiomas</option>
-          <option value="PT">🇧🇷 Português</option>
+          <option value="PT">🇵🇹 Português</option>
           <option value="EN">🇺🇸 Inglês</option>
           <option value="ES">🇪🇸 Espanhol</option>
+          <option value="FR">🇫🇷 Francês</option>
         </select>
 
         <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs font-semibold uppercase tracking-wider">
