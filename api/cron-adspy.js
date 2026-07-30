@@ -54,24 +54,25 @@ async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const API_TOKEN = process.env.VITE_APIFY_API_TOKEN;
-  const APIFY_TASK_ID = process.env.APIFY_TASK_ID;
-  const libraryId = process.env.BUNNY_LIBRARY_ID;
-  const apiKey = process.env.BUNNY_API_KEY;
-  
-  const niche = req.query.niche || 'emagrecimento';
-  const lang = (req.query.lang || 'pt').toLowerCase();
-  const category = (req.query.category || niche).toLowerCase().replace(/\+/g, '_');
-
-  if (!APIFY_TASK_ID || !API_TOKEN) {
-    return res.status(500).json({ error: 'Configurações da Apify ausentes.' });
-  }
-
   try {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+
+    const API_TOKEN = process.env.VITE_APIFY_API_TOKEN;
+    const APIFY_TASK_ID = process.env.APIFY_TASK_ID;
+    const libraryId = process.env.BUNNY_LIBRARY_ID;
+    const apiKey = process.env.BUNNY_API_KEY;
+    
+    const query = req.query || {};
+    const niche = query.niche ? String(query.niche).trim() : 'emagrecimento';
+    const lang = query.lang ? String(query.lang).trim().toLowerCase() : 'pt';
+    const categoryRaw = query.category ? String(query.category).trim().toLowerCase().replace(/\+/g, '_') : niche.toLowerCase();
+    const category = categoryRaw;
+
+    if (!APIFY_TASK_ID || !API_TOKEN) {
+      return res.status(500).json({ error: 'Configurações da Apify ausentes.' });
+    }
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_TASK_ID.replace('/', '~')}/run-sync-get-dataset-items?token=${API_TOKEN}`;
     const formattedUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(niche)}&search_type=keyword_unordered`;
     

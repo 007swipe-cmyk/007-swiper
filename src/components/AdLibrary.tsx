@@ -38,6 +38,18 @@ export const getDaysRunning = (ad: any) => {
   return diffDays >= 1 ? diffDays : 1;
 };
 
+export const getNormalizedCategory = (ad: any) => {
+  const cat = (ad.categoria || ad.nicho || ad.category || '').toString().toLowerCase().trim();
+  
+  if (/weight|loss|quema|grasa|emagrecimento/i.test(cat)) return 'EMAGRECIMENTO';
+  if (/make|money|renda|extra|ganhar|dinheiro/i.test(cat)) return 'RENDA EXTRA';
+  if (/truque|truques|trick/i.test(cat)) return 'TRUQUES';
+  if (/aposta|apostas|bet|igaming/i.test(cat)) return 'APOSTAS';
+  if (/amor|relacionamento|dating/i.test(cat)) return 'RELACIONAMENTO';
+  
+  return cat ? cat.toUpperCase() : 'GERAL';
+};
+
 export const AdLibrary: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -110,8 +122,8 @@ export const AdLibrary: React.FC = () => {
   }, [selectedCategory, selectedLang, searchQuery, selectedPeriod, copiesFilter]);
 
   const availableCategories = useMemo(() => {
-    const cats = ads.map(ad => ad.categoria || ad.category).filter(Boolean);
-    return Array.from(new Set(cats.map(c => c.toLowerCase())));
+    const cats = ads.map(ad => getNormalizedCategory(ad)).filter(Boolean);
+    return Array.from(new Set(cats)).sort();
   }, [ads]);
 
   const getActiveTagLabel = (category: string, lang: string) => {
@@ -137,6 +149,11 @@ export const AdLibrary: React.FC = () => {
       if (lg === 'en') return 'betting / casino';
       if (lg === 'es') return 'apuestas';
       return 'apostas';
+    }
+    if (cat === 'relacionamento' || cat === 'dating' || cat === 'amor') {
+      if (lg === 'en') return 'dating / relationships';
+      if (lg === 'es') return 'relaciones';
+      return 'relacionamento';
     }
 
     if (lg !== 'todos' && lg !== 'todas') {
@@ -173,8 +190,7 @@ export const AdLibrary: React.FC = () => {
     const adLang = (ad.idioma || detectLanguage(ad)).toUpperCase();
     const matchesLanguage = selectedLang === 'TODOS' || adLang === selectedLang;
 
-    const adCat = (ad.categoria || ad.category || 'Geral').toLowerCase();
-    const matchesCategory = selectedCategory === 'TODAS' || adCat === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === 'TODAS' || getNormalizedCategory(ad) === selectedCategory;
 
     const matchesPeriod = () => {
       if (selectedPeriod === 'TODOS') return true;
