@@ -15,20 +15,38 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 8000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
   if (!videoUrl) return null;
   try {
-    const videoRes = await fetch(videoUrl);
+    const videoRes = await fetchWithTimeout(videoUrl, { timeout: 10000 });
     if (!videoRes.ok) return null;
     const arrayBuffer = await videoRes.arrayBuffer();
 
-    const createRes = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
+    const createRes = await fetchWithTimeout(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
       method: 'POST',
       headers: {
         'AccessKey': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ title: "Ad_Facebook_" + Date.now() })
+      body: JSON.stringify({ title: "Ad_Facebook_" + Date.now() }),
+      timeout: 5000
     });
 
     if (!createRes.ok) return null;
@@ -36,19 +54,20 @@ async function uploadToBunnyStream(videoUrl, libraryId, apiKey) {
     const guid = videoInfo?.guid;
     if (!guid) return null;
 
-    const uploadRes = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`, {
+    const uploadRes = await fetchWithTimeout(`https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`, {
       method: 'PUT',
       headers: {
         'AccessKey': apiKey,
         'Content-Type': 'application/octet-stream'
       },
-      body: Buffer.from(arrayBuffer)
+      body: Buffer.from(arrayBuffer),
+      timeout: 15000
     });
 
     if (!uploadRes.ok) return null;
     return `https://vz-3e45a7a6-1ed.b-cdn.net/${guid}/play_720p.mp4`;
   } catch (error) {
-    console.error("Erro Bunny Stream:", error);
+    console.error("Erro Bunny Stream (ou timeout):", error);
     return null;
   }
 }
@@ -77,6 +96,7 @@ export default async function handler(req, res) {
     const lang = query.lang ? String(query.lang).trim().toLowerCase() : 'pt';
     const categoryRaw = query.category ? String(query.category).trim().toLowerCase().replace(/\+/g, '_') : niche.toLowerCase();
     const category = categoryRaw;
+    const limit = query.limit ? Math.min(parseInt(query.limit, 10), 30) : 15;
 
     if (!APIFY_TASK_ID || !API_TOKEN) {
       return res.status(500).json({ error: 'Configurações da Apify ausentes.' });
@@ -92,9 +112,9 @@ export default async function handler(req, res) {
         searchTerms: [niche],
         searchType: "keyword_unordered",
         countryCode: "ALL",
-        maxAds: 50,
-        maxItems: 50,
-        resultsLimit: 50,
+        maxAds: limit,
+        maxItems: limit,
+        resultsLimit: limit,
         proxyConfiguration: { useApifyProxy: true }
       })
     });
