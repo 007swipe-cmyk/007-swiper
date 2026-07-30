@@ -37,14 +37,16 @@ export const getDaysRunning = (ad: any) => {
 
 export const getNormalizedCategory = (ad: any) => {
   const cat = (ad.categoria || ad.nicho || ad.category || '').toString().toLowerCase().trim();
-  
-  if (/weight|loss|quema|grasa|emagrecimento/i.test(cat)) return 'EMAGRECIMENTO';
-  if (/make|money|renda|extra|ganhar|dinheiro/i.test(cat)) return 'RENDA EXTRA';
-  if (/truque|truques|trick/i.test(cat)) return 'TRUQUES';
-  if (/aposta|apostas|bet|igaming/i.test(cat)) return 'APOSTAS';
-  if (/amor|relacionamento|dating/i.test(cat)) return 'RELACIONAMENTO';
-  
-  return null;
+
+  if (/weight|loss|quema|grasa|emagrecimento|perte_de_poids/i.test(cat)) return 'EMAGRECIMENTO';
+  if (/make|money|renda|extra|ganhar|dinheiro|gagner/i.test(cat)) return 'RENDA EXTRA';
+  if (/truque|truques|trick|astuce/i.test(cat)) return 'TRUQUES';
+  if (/aposta|apostas|bet|igaming|casino|paris_sportifs/i.test(cat)) return 'APOSTAS';
+  if (/amor|relacionamento|dating|relaciones|rencontre/i.test(cat)) return 'RELACIONAMENTO';
+  if (/estetica|beleza|rejuvenescimento|anti_aging|anti_age|rejuvenecimiento/i.test(cat)) return 'BELEZA & ESTÉTICA';
+  if (/saude|diabetes|dor|dores|joint_pain|dolor|mal_de_dos|prostate|prostata/i.test(cat)) return 'SAÚDE & DORES';
+
+  return cat ? cat.toUpperCase() : null;
 };
 
 export const AdLibrary: React.FC = () => {
