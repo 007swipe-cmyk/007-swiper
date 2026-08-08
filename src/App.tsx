@@ -10,8 +10,10 @@ import { LandingPage } from './components/LandingPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdLibrary } from './components/AdLibrary';
 import { TelemetryHUD } from './components/TelemetryHUD';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
-import { auth, db } from './lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './lib/firebase';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Footer } from './components/Footer';
 
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6N1u2xV-Of_muP_LJY9OGC77qXDOJ254TVzwpYAb-Ew8X-6-ZL3ZurlTiAwy19w/pub?output=csv';
@@ -235,17 +237,9 @@ export interface OrganicHook {
 
 
 
-// --- APP PRINCIPAL ---
-const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('007_SWIPER_MASTER_LOCKDOWN') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
+// --- APP CONTENT PRINCIPAL ---
+const AppContent: React.FC = () => {
+  const { isAuthenticated, logout, loginError } = useAuth();
 
   // Clean old session keys on mount
   useEffect(() => {
@@ -253,78 +247,6 @@ const App: React.FC = () => {
     localStorage.removeItem('007_swiper_session');
     localStorage.removeItem('007_swiper_session_v2');
   }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const checkUserStatus = async (emailToCheck: string) => {
-      const emailClean = emailToCheck.trim();
-      
-      // Bypass check for master account
-      if (emailClean.toLowerCase() === '007swipe@gmail.com') {
-        return;
-      }
-
-      try {
-        const docRef1 = doc(db, 'agentes', emailClean);
-        const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
-        const docSnap1 = await getDoc(docRef1);
-        const docSnap2 = await getDoc(docRef2);
-        
-        let isAtivo = false;
-        let foundData = null;
-        if (docSnap1.exists()) {
-          foundData = docSnap1.data();
-        } else if (docSnap2.exists()) {
-          foundData = docSnap2.data();
-        }
-        
-        if (foundData) {
-          if (foundData.ativo === true) {
-            isAtivo = true;
-          }
-        } else {
-          // Fallback: Query by email field
-          const agentesRef = collection(db, 'agentes');
-          const q1 = query(agentesRef, where('email', '==', emailClean));
-          const q2 = query(agentesRef, where('email', '==', emailClean.toLowerCase()));
-          const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-          
-          if (!snap1.empty) {
-            const data = snap1.docs[0].data();
-            if (data && data.ativo === true) {
-              isAtivo = true;
-            }
-          } else if (!snap2.empty) {
-            const data = snap2.docs[0].data();
-            if (data && data.ativo === true) {
-              isAtivo = true;
-            }
-          }
-        }
-
-        if (!isAtivo) {
-          // Clean localStorage
-          localStorage.removeItem('007_SWIPER_MASTER_LOCKDOWN');
-          localStorage.removeItem('007_swiper_email');
-          await auth.signOut();
-          setIsAuthenticated(false);
-          setLoginErrorMessage('Sua assinatura está inativa ou expirada. Entre em contato com o suporte.');
-        }
-      } catch (error) {
-        console.error("Erro ao verificar status do agente:", error);
-      }
-    };
-
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      const email = user?.email || localStorage.getItem('007_swiper_email');
-      if (email) {
-        checkUserStatus(email);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [isAuthenticated]);
 
   const [currentModule, setCurrentModule] = useState('home');
   const [currentPage, setCurrentPage] = useState<string>('dashboard'); 
@@ -1567,21 +1489,12 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <LandingPage 
-        onLogin={(email) => {
-          setIsAuthenticated(true);
-          localStorage.setItem('007_SWIPER_MASTER_LOCKDOWN', 'true');
-          localStorage.setItem('007_swiper_email', email);
-          setLoginErrorMessage('');
-        }} 
-        onRouteToAdmin={(email) => {
-          setIsAuthenticated(true);
-          localStorage.setItem('007_SWIPER_MASTER_LOCKDOWN', 'true');
-          localStorage.setItem('007_swiper_email', email);
-          setLoginErrorMessage('');
+        onLogin={() => {}} 
+        onRouteToAdmin={() => {
           setCurrentPage('admin_dashboard');
           setCurrentModule('admin');
         }}
-        initialErrorMessage={loginErrorMessage}
+        initialErrorMessage={loginError}
       />
     );
   }
@@ -1647,14 +1560,7 @@ const App: React.FC = () => {
           <button 
             onClick={async () => {
               if (window.confirm('Deseja realmente sair?')) {
-                setIsAuthenticated(false);
-                localStorage.removeItem('007_SWIPER_MASTER_LOCKDOWN');
-                localStorage.removeItem('007_swiper_email');
-                try {
-                  await auth.signOut();
-                } catch (e) {
-                  console.error("Sign out error:", e);
-                }
+                await logout();
               }
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all border border-transparent text-red-500 hover:bg-red-500/10 hover:text-red-400 whitespace-nowrap"
@@ -1674,28 +1580,18 @@ const App: React.FC = () => {
               {renderContent()}
             </div>
             
-            {currentPage !== 'biblioteca' && (
-              <footer className="border-t border-white/5 py-8 text-center bg-[#030303]/50 mt-12 relative z-10">
-                <div className="max-w-6xl mx-auto px-6">
-                  <p 
-                    className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest select-none"
-                  >
-                    © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
-                  </p>
-                  <div
-                    onDoubleClick={() => {
-                      setCurrentPage('admin_dashboard');
-                      setCurrentModule('admin');
-                    }}
-                    className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-default select-none"
-                    style={{ opacity: 0 }}
-                  />
-                </div>
-              </footer>
-            )}
+            {currentPage !== 'biblioteca' && <Footer />}
         </main>
       </div>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

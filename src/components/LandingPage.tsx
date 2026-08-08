@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Play, Check, X, MessageCircle } from 'lucide-react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { ShieldCheck, Play, Check, MessageCircle } from 'lucide-react';
+import { Login } from './Login';
+import { Footer } from './Footer';
 
 interface LandingPageProps {
   onLogin: (email: string) => void;
@@ -12,65 +11,18 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmin, initialErrorMessage }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminLoginError, setAdminLoginError] = useState('');
-  const [isAdminLoading, setIsAdminLoading] = useState(false);
 
   useEffect(() => {
     if (initialErrorMessage) {
-      setLoginError(initialErrorMessage);
       setShowLoginModal(true);
     }
   }, [initialErrorMessage]);
 
-  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
+  const handleRecoverId = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsAdminLoading(true);
-    setAdminLoginError('');
-    const emailClean = adminEmail.trim();
-
-    // Check master administrator credentials
-    if (emailClean.toLowerCase() === '007swipe@gmail.com') {
-      if (adminPassword !== 'agente-01') {
-        setAdminLoginError('Credenciais inválidas ou acesso revogado.');
-        setIsAdminLoading(false);
-        return;
-      }
-      // Acesso concedido apenas para agente-01
-      setIsAdminLoading(false);
-      setShowAdminLoginModal(false);
-      onRouteToAdmin(emailClean);
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, emailClean, adminPassword);
-      setShowAdminLoginModal(false);
-      onRouteToAdmin(emailClean);
-    } catch (error) {
-      console.error('Admin login error:', error);
-      setAdminLoginError('Acesso Administrador Negado');
-    } finally {
-      setIsAdminLoading(false);
-    }
+    alert('RECUPERAÇÃO DE CREDENCIAIS:\n\nPor favor, envie um e-mail para suporte@007swiper.com ou verifique sua senha de agente enviada no manual de instruções de compra.');
   };
 
-  const handleFooterDoubleClick = () => {
-    if (auth.currentUser || localStorage.getItem('007_SWIPER_MASTER_LOCKDOWN') === 'true') {
-      const email = auth.currentUser?.email || localStorage.getItem('007_swiper_email') || '';
-      onRouteToAdmin(email);
-    } else {
-      setShowAdminLoginModal(true);
-    }
-  };
-  const [agentEmail, setAgentEmail] = useState('');
-  const [agentPassword, setAgentPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [authTab, setAuthTab] = useState<'login' | 'firstAccess'>('login');
-  
   // Checkout URL logic depending on search parameter 'ref'
   const [isHotmart, setIsHotmart] = useState(false);
 
@@ -86,155 +38,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
     trimestral: isHotmart 
       ? '#hotmart-trimestral-pendente' 
       : 'https://pay.kiwify.com.br/ExDtrjE',
-  };
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setLoginError('');
-    const emailClean = agentEmail.trim();
-
-    if (authTab === 'login') {
-      // Check master administrator credentials
-      if (emailClean.toLowerCase() === '007swipe@gmail.com') {
-        if (agentPassword !== 'agente-01') {
-          setLoginError('Credenciais inválidas ou acesso revogado.');
-          setIsLoading(false);
-          return;
-        }
-        setIsLoading(false);
-        onLogin(emailClean);
-        return;
-      }
-
-      try {
-        // Query Firestore first to make sure they are active (ativo === true)
-        const docRef1 = doc(db, 'agentes', emailClean);
-        const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
-        const docSnap1 = await getDoc(docRef1);
-        const docSnap2 = await getDoc(docRef2);
-        
-        let existsAndActive = false;
-        let foundData = null;
-        if (docSnap1.exists()) {
-          foundData = docSnap1.data();
-        } else if (docSnap2.exists()) {
-          foundData = docSnap2.data();
-        }
-        
-        if (foundData) {
-          if (foundData.ativo === true) {
-            existsAndActive = true;
-          }
-        } else {
-          // Fallback: Query by email field
-          const agentesRef = collection(db, 'agentes');
-          const q1 = query(agentesRef, where('email', '==', emailClean));
-          const q2 = query(agentesRef, where('email', '==', emailClean.toLowerCase()));
-          const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-          
-          if (!snap1.empty) {
-            const data = snap1.docs[0].data();
-            if (data && data.ativo === true) {
-              existsAndActive = true;
-            }
-          } else if (!snap2.empty) {
-            const data = snap2.docs[0].data();
-            if (data && data.ativo === true) {
-              existsAndActive = true;
-            }
-          }
-        }
-
-        if (!existsAndActive) {
-          setLoginError('Sua assinatura está inativa ou expirada. Entre em contato com o suporte.');
-          setIsLoading(false);
-          return;
-        }
-
-        // Authenticate via Firebase Auth
-        await signInWithEmailAndPassword(auth, emailClean, agentPassword);
-        onLogin(emailClean);
-      } catch (error) {
-        console.error('Login error:', error);
-        setLoginError('Acesso Negado');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      // PRIMEIRO ACESSO FLOW
-      try {
-        // Check master administrator credentials (cannot register master account from first access)
-        if (emailClean.toLowerCase() === '007swipe@gmail.com') {
-          setLoginError('Este e-mail já possui cadastro. Use a aba "Entrar" com sua senha.');
-          setIsLoading(false);
-          return;
-        }
-
-        // 1. Query Firestore agentes collection
-        const docRef1 = doc(db, 'agentes', emailClean);
-        const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
-        const docSnap1 = await getDoc(docRef1);
-        const docSnap2 = await getDoc(docRef2);
-        
-        let existsAndActive = false;
-        let foundData = null;
-        if (docSnap1.exists()) {
-          foundData = docSnap1.data();
-        } else if (docSnap2.exists()) {
-          foundData = docSnap2.data();
-        }
-        
-        if (foundData) {
-          if (foundData.ativo === true) {
-            existsAndActive = true;
-          }
-        } else {
-          // Fallback: Query by email field
-          const agentesRef = collection(db, 'agentes');
-          const q1 = query(agentesRef, where('email', '==', emailClean));
-          const q2 = query(agentesRef, where('email', '==', emailClean.toLowerCase()));
-          const snap1 = await getDocs(q1);
-          const snap2 = await getDocs(q2);
-          
-          if (!snap1.empty) {
-            const data = snap1.docs[0].data();
-            if (data && data.ativo === true) {
-              existsAndActive = true;
-            }
-          } else if (!snap2.empty) {
-            const data = snap2.docs[0].data();
-            if (data && data.ativo === true) {
-              existsAndActive = true;
-            }
-          }
-        }
-
-        if (!existsAndActive) {
-          setLoginError('E-mail não encontrado ou inativo. Contate o suporte.');
-          setIsLoading(false);
-          return;
-        }
-
-        // 2. Create the user with email and chosen password in Firebase Auth
-        await createUserWithEmailAndPassword(auth, emailClean, agentPassword);
-        onLogin(emailClean); // Log them in automatically on success
-      } catch (error: any) {
-        console.error('First access registration error:', error);
-        if (error.code === 'auth/email-already-in-use') {
-          setLoginError('Este e-mail já possui cadastro. Use a aba "Entrar" com sua senha.');
-        } else {
-          setLoginError(error.message || 'Erro ao realizar primeiro acesso.');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  const handleRecoverId = (e: React.MouseEvent) => {
-    e.preventDefault();
-    alert('RECUPERAÇÃO DE CREDENCIAIS:\n\nPor favor, envie um e-mail para suporte@007swiper.com ou verifique sua senha de agente enviada no manual de instruções de compra.');
   };
 
   return (
@@ -262,7 +65,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
             RECUPERAR ID
           </button>
           <button 
-            onClick={() => { setShowLoginModal(true); setLoginError(''); setAgentEmail(''); setAgentPassword(''); setIsLoading(false); }}
+            onClick={() => setShowLoginModal(true)}
             className="bg-[#D4AF37] hover:bg-white text-black font-black uppercase tracking-widest py-2.5 px-6 rounded-lg text-xs transition-all duration-300 shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:shadow-[0_4px_25px_rgba(255,255,255,0.25)] active:scale-[0.98] cursor-pointer"
           >
             ENTRAR
@@ -431,21 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 py-12 text-center bg-[#030303] relative z-10">
-        <div className="max-w-6xl mx-auto px-6">
-          <p 
-            className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest select-none"
-          >
-            © 2026 007 SWIPER INTELLIGENCE PLATFORM. TODOS OS DIREITOS RESERVADOS.
-          </p>
-          <div
-            onDoubleClick={handleFooterDoubleClick}
-            className="w-[100px] h-[100px] mx-auto mt-2 relative z-50 cursor-default select-none"
-            style={{ opacity: 0 }}
-          />
-        </div>
-      </footer>
+      <Footer />
 
       {/* FLOATING WHATSAPP BUTTON */}
       <a
@@ -461,160 +250,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
         </span>
       </a>
 
-      {/* LOGIN MODAL */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(212,175,55,0.05)]">
-            <button 
-              onClick={() => setShowLoginModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-
-            <div className="flex flex-col items-center text-center gap-3 mb-6">
-              <div className="bg-[#D4AF37]/10 p-3 rounded-full text-[#D4AF37] border border-[#D4AF37]/20">
-                <ShieldCheck size={28} />
-              </div>
-              <h3 className="text-base font-black tracking-widest uppercase">AUTENTICAÇÃO DO AGENTE</h3>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Insira suas credenciais operacionais</p>
-            </div>
-
-            {/* TABS SELECTOR */}
-            <div className="flex border-b border-white/5 mb-6">
-              <button
-                type="button"
-                onClick={() => { setAuthTab('login'); setLoginError(''); setAgentEmail(''); setAgentPassword(''); }}
-                className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-widest transition-all ${
-                  authTab === 'login'
-                    ? 'border-b-2 border-[#D4AF37] text-white'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                ENTRAR
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAuthTab('firstAccess'); setLoginError(''); setAgentEmail(''); setAgentPassword(''); }}
-                className={`flex-1 pb-3 text-[10px] font-black uppercase tracking-widest transition-all ${
-                  authTab === 'firstAccess'
-                    ? 'border-b-2 border-[#D4AF37] text-white'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                PRIMEIRO ACESSO
-              </button>
-            </div>
-
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                  {authTab === 'login' ? 'E-MAIL DO AGENTE' : 'E-MAIL PARA ATIVAÇÃO'}
-                </label>
-                <input 
-                  type="email"
-                  placeholder="EX: AGENTE@007SWIPER.COM"
-                  value={agentEmail}
-                  onChange={(e) => setAgentEmail(e.target.value)}
-                  className="w-full bg-[#050505] border border-white/10 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37]/65 outline-none placeholder:text-zinc-800 transition-all"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                  {authTab === 'login' ? 'SENHA DE CREDENCIAMENTO' : 'ESCOLHA UMA SENHA SEGURA'}
-                </label>
-                <input 
-                  type="password"
-                  placeholder="••••••••"
-                  value={agentPassword}
-                  onChange={(e) => setAgentPassword(e.target.value)}
-                  className="w-full bg-[#050505] border border-white/10 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37]/65 outline-none placeholder:text-zinc-800 transition-all"
-                  required
-                />
-              </div>
-
-              {loginError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded text-[9px] font-black uppercase tracking-wider text-center">
-                  {loginError}
-                </div>
-              )}
-
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#D4AF37] hover:bg-white text-black font-black uppercase tracking-widest py-3.5 rounded-lg text-xs transition-all duration-300 shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:shadow-2xl active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading 
-                  ? (authTab === 'login' ? 'AUTENTICANDO...' : 'CADASTRANDO...') 
-                  : (authTab === 'login' ? 'DESBLOQUEAR ACESSO' : 'ATIVAR PRIMEIRO ACESSO')
-                }
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* EASTER EGG ADMIN LOGIN MODAL */}
-      {showAdminLoginModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-[#080808] border-2 border-[#D4AF37]/30 rounded-2xl p-6 relative shadow-[0_0_50px_rgba(212,175,55,0.1)]">
-            <button 
-              onClick={() => setShowAdminLoginModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-
-            <div className="text-center mb-6">
-              <span className="text-[8px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">MÓDULO DE SEGURANÇA</span>
-              <h3 className="text-sm font-black tracking-widest uppercase text-white">AUTENTICAÇÃO TÁTICA MASTER</h3>
-              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Insira as credenciais do administrador</p>
-            </div>
-
-            <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">E-MAIL MASTER</label>
-                <input 
-                  type="email"
-                  placeholder="EX: ADMIN@007SWIPER.COM"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  className="w-full bg-[#050505] border border-[#D4AF37]/20 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37] outline-none placeholder:text-zinc-800 transition-all"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">SENHA DE CREDENCIAMENTO</label>
-                <input 
-                  type="password"
-                  placeholder="••••••••"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-[#050505] border border-[#D4AF37]/20 rounded-lg py-3 px-4 text-xs tracking-widest text-center text-[#D4AF37] font-black focus:border-[#D4AF37] outline-none placeholder:text-zinc-800 transition-all"
-                  required
-                />
-              </div>
-
-              {adminLoginError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded text-[9px] font-black uppercase tracking-wider text-center">
-                  {adminLoginError}
-                </div>
-              )}
-
-              <button 
-                type="submit"
-                disabled={isAdminLoading}
-                className="w-full bg-zinc-900 hover:bg-[#D4AF37] hover:text-black border border-white/10 hover:border-transparent text-white font-black uppercase tracking-widest py-3 rounded-lg text-[10px] transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isAdminLoading ? 'CONECTANDO...' : 'DESBLOQUEAR ACESSO MASTER'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <Login 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+        onLogin={onLogin} 
+        onRouteToAdmin={onRouteToAdmin} 
+      />
     </div>
   );
 };
