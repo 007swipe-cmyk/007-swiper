@@ -5,11 +5,12 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { auth, db } from '../lib/firebase';
 
 interface LandingPageProps {
-  onLogin: () => void;
-  onRouteToAdmin: () => void;
+  onLogin: (email: string) => void;
+  onRouteToAdmin: (email: string) => void;
+  initialErrorMessage?: string;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmin }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmin, initialErrorMessage }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
@@ -17,14 +18,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
   const [adminLoginError, setAdminLoginError] = useState('');
   const [isAdminLoading, setIsAdminLoading] = useState(false);
 
+  useEffect(() => {
+    if (initialErrorMessage) {
+      setLoginError(initialErrorMessage);
+      setShowLoginModal(true);
+    }
+  }, [initialErrorMessage]);
+
   const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdminLoading(true);
     setAdminLoginError('');
-    try {
-      await signInWithEmailAndPassword(auth, adminEmail.trim(), adminPassword);
+    const emailClean = adminEmail.trim();
+
+    // Check master administrator credentials
+    if (emailClean.toLowerCase() === '007swipe@gmail.com' && adminPassword === 'agente-01') {
+      setIsAdminLoading(false);
       setShowAdminLoginModal(false);
-      onRouteToAdmin();
+      onRouteToAdmin(emailClean);
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, emailClean, adminPassword);
+      setShowAdminLoginModal(false);
+      onRouteToAdmin(emailClean);
     } catch (error) {
       console.error('Admin login error:', error);
       setAdminLoginError('Acesso Administrador Negado');
@@ -34,8 +52,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
   };
 
   const handleFooterDoubleClick = () => {
-    if (auth.currentUser || localStorage.getItem('swiper_authenticated') === 'true') {
-      onRouteToAdmin();
+    if (auth.currentUser || localStorage.getItem('007_swiper_session_v2') === 'true') {
+      const email = auth.currentUser?.email || localStorage.getItem('007_swiper_email') || '';
+      onRouteToAdmin(email);
     } else {
       setShowAdminLoginModal(true);
     }
@@ -70,9 +89,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
     const emailClean = agentEmail.trim();
 
     if (authTab === 'login') {
+      // Check master administrator credentials
+      if (emailClean.toLowerCase() === '007swipe@gmail.com' && agentPassword === 'agente-01') {
+        setIsLoading(false);
+        onLogin(emailClean);
+        return;
+      }
+
       try {
         await signInWithEmailAndPassword(auth, emailClean, agentPassword);
-        onLogin();
+        onLogin(emailClean);
       } catch (error) {
         console.error('Login error:', error);
         setLoginError('Acesso Negado');
@@ -82,6 +108,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
     } else {
       // PRIMEIRO ACESSO FLOW
       try {
+        // Check master administrator credentials (cannot register master account from first access)
+        if (emailClean.toLowerCase() === '007swipe@gmail.com') {
+          setLoginError('Este e-mail já possui cadastro. Use a aba "Entrar" com sua senha.');
+          setIsLoading(false);
+          return;
+        }
+
         // 1. Query Firestore agentes collection
         const docRef1 = doc(db, 'agentes', emailClean);
         const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
@@ -129,7 +162,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
 
         // 2. Create the user with email and chosen password in Firebase Auth
         await createUserWithEmailAndPassword(auth, emailClean, agentPassword);
-        onLogin(); // Log them in automatically on success
+        onLogin(emailClean); // Log them in automatically on success
       } catch (error: any) {
         console.error('First access registration error:', error);
         if (error.code === 'auth/email-already-in-use') {
