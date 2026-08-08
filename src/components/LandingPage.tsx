@@ -32,7 +32,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
     const emailClean = adminEmail.trim();
 
     // Check master administrator credentials
-    if (emailClean.toLowerCase() === '007swipe@gmail.com' && adminPassword === 'agente-01') {
+    if (emailClean.toLowerCase() === '007swipe@gmail.com') {
+      if (adminPassword !== 'agente-01') {
+        setAdminLoginError('Credenciais inválidas ou acesso revogado.');
+        setIsAdminLoading(false);
+        return;
+      }
+      // Acesso concedido apenas para agente-01
       setIsAdminLoading(false);
       setShowAdminLoginModal(false);
       onRouteToAdmin(emailClean);
@@ -52,7 +58,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
   };
 
   const handleFooterDoubleClick = () => {
-    if (auth.currentUser || localStorage.getItem('007_swiper_session_v2') === 'true') {
+    if (auth.currentUser || localStorage.getItem('007_SWIPER_MASTER_LOCKDOWN') === 'true') {
       const email = auth.currentUser?.email || localStorage.getItem('007_swiper_email') || '';
       onRouteToAdmin(email);
     } else {
@@ -90,13 +96,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onRouteToAdmi
 
     if (authTab === 'login') {
       // Check master administrator credentials
-      if (emailClean.toLowerCase() === '007swipe@gmail.com' && agentPassword === 'agente-01') {
+      if (emailClean.toLowerCase() === '007swipe@gmail.com') {
+        if (agentPassword !== 'agente-01') {
+          setLoginError('Credenciais inválidas ou acesso revogado.');
+          setIsLoading(false);
+          return;
+        }
         setIsLoading(false);
         onLogin(emailClean);
         return;
       }
 
       try {
+        // Query Firestore first to make sure they are active (ativo === true)
+        const docRef1 = doc(db, 'agentes', emailClean);
+        const docRef2 = doc(db, 'agentes', emailClean.toLowerCase());
+        const docSnap1 = await getDoc(docRef1);
+        const docSnap2 = await getDoc(docRef2);
+        
+        let existsAndActive = false;
+        let foundData = null;
+        if (docSnap1.exists()) {
+          foundData = docSnap1.data();
+        } else if (docSnap2.exists()) {
+          foundData = docSnap2.data();
+        }
+        
+        if (foundData) {
+          if (foundData.ativo === true) {
+            existsAndActive = true;
+          }
+        } else {
+          // Fallback: Query by email field
+          const agentesRef = collection(db, 'agentes');
+          const q1 = query(agentesRef, where('email', '==', emailClean));
+          const q2 = query(agentesRef, where('email', '==', emailClean.toLowerCase()));
+          const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+          
+          if (!snap1.empty) {
+            const data = snap1.docs[0].data();
+            if (data && data.ativo === true) {
+              existsAndActive = true;
+            }
+          } else if (!snap2.empty) {
+            const data = snap2.docs[0].data();
+            if (data && data.ativo === true) {
+              existsAndActive = true;
+            }
+          }
+        }
+
+        if (!existsAndActive) {
+          setLoginError('Sua assinatura está inativa ou expirada. Entre em contato com o suporte.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Authenticate via Firebase Auth
         await signInWithEmailAndPassword(auth, emailClean, agentPassword);
         onLogin(emailClean);
       } catch (error) {

@@ -239,13 +239,20 @@ export interface OrganicHook {
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('007_swiper_session_v2') === 'true';
+      return localStorage.getItem('007_SWIPER_MASTER_LOCKDOWN') === 'true';
     } catch {
       return false;
     }
   });
 
   const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
+
+  // Clean old session keys on mount
+  useEffect(() => {
+    localStorage.removeItem('007_session');
+    localStorage.removeItem('007_swiper_session');
+    localStorage.removeItem('007_swiper_session_v2');
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -264,7 +271,7 @@ const App: React.FC = () => {
         const docSnap1 = await getDoc(docRef1);
         const docSnap2 = await getDoc(docRef2);
         
-        let isAtivo = true;
+        let isAtivo = false;
         let foundData = null;
         if (docSnap1.exists()) {
           foundData = docSnap1.data();
@@ -273,8 +280,8 @@ const App: React.FC = () => {
         }
         
         if (foundData) {
-          if (foundData.ativo === false) {
-            isAtivo = false;
+          if (foundData.ativo === true) {
+            isAtivo = true;
           }
         } else {
           // Fallback: Query by email field
@@ -285,20 +292,20 @@ const App: React.FC = () => {
           
           if (!snap1.empty) {
             const data = snap1.docs[0].data();
-            if (data && data.ativo === false) {
-              isAtivo = false;
+            if (data && data.ativo === true) {
+              isAtivo = true;
             }
           } else if (!snap2.empty) {
             const data = snap2.docs[0].data();
-            if (data && data.ativo === false) {
-              isAtivo = false;
+            if (data && data.ativo === true) {
+              isAtivo = true;
             }
           }
         }
 
         if (!isAtivo) {
           // Clean localStorage
-          localStorage.removeItem('007_swiper_session_v2');
+          localStorage.removeItem('007_SWIPER_MASTER_LOCKDOWN');
           localStorage.removeItem('007_swiper_email');
           await auth.signOut();
           setIsAuthenticated(false);
@@ -1515,7 +1522,7 @@ const App: React.FC = () => {
                             <div className="space-y-3 font-mono text-[10px] pt-2">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-2">
                                     <span className="text-zinc-500 uppercase font-bold">SENHA</span>
-                                    <span className="text-zinc-200 font-bold">AGENTE-007</span>
+                                    <span className="text-zinc-200 font-bold">INDIVIDUAL / PRIVADA</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-zinc-500 uppercase font-bold">SESSÃO</span>
@@ -1562,13 +1569,13 @@ const App: React.FC = () => {
       <LandingPage 
         onLogin={(email) => {
           setIsAuthenticated(true);
-          localStorage.setItem('007_swiper_session_v2', 'true');
+          localStorage.setItem('007_SWIPER_MASTER_LOCKDOWN', 'true');
           localStorage.setItem('007_swiper_email', email);
           setLoginErrorMessage('');
         }} 
         onRouteToAdmin={(email) => {
           setIsAuthenticated(true);
-          localStorage.setItem('007_swiper_session_v2', 'true');
+          localStorage.setItem('007_SWIPER_MASTER_LOCKDOWN', 'true');
           localStorage.setItem('007_swiper_email', email);
           setLoginErrorMessage('');
           setCurrentPage('admin_dashboard');
@@ -1641,7 +1648,7 @@ const App: React.FC = () => {
             onClick={async () => {
               if (window.confirm('Deseja realmente sair?')) {
                 setIsAuthenticated(false);
-                localStorage.removeItem('007_swiper_session_v2');
+                localStorage.removeItem('007_SWIPER_MASTER_LOCKDOWN');
                 localStorage.removeItem('007_swiper_email');
                 try {
                   await auth.signOut();
